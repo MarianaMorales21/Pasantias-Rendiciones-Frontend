@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import {  } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ComponentCard from "../components/common/ComponentCard";
 import PageMeta from "../components/common/PageMeta";
@@ -8,6 +8,8 @@ import Input from "../components/form/input/InputField";
 import Label from "../components/form/Label";
 import Badge from "../components/ui/badge/Badge";
 import { Modal } from "../components/ui/modal/index";
+import { useAccountants } from "../hooks/useAccountants";
+import { AccountantItem } from "../types/accountant";
 import {
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -15,73 +17,61 @@ import {
   TrashBinIcon,
 } from "../icons";
 
-// ─── Tipos e Interfaces ─────────────────────────────────────────────────────
-interface AccountantItem {
-  id: number;
-  nombre: string;
-  cedula: string;
-  telefono: string;
-  correo: string;
-  estado: "Active" | "Pending" | "Cancel";
-}
-
-type AccountantFormData = Omit<AccountantItem, "id">;
-
-interface AccountantFormProps {
-  formData: AccountantFormData;
-  onChange: (key: keyof AccountantFormData, value: string) => void;
-}
-
-const emptyForm: AccountantFormData = {
-  nombre: "",
-  cedula: "",
-  telefono: "",
-  correo: "",
-  estado: "Active",
+// --- Mapeos de Estados ---
+const statesMap: Record<number, string> = {
+  1: "Activo",
+  2: "Inactivo",
+  3: "Pendiente",
 };
 
-// ─── Componente de formulario (FUERA del padre para evitar pérdida de foco) ──
-function AccountantForm({ formData, onChange }: AccountantFormProps) {
+// ─── Componente de formulario ────────────────────────────────────────────────
+interface AccountantFormProps {
+  formData: AccountantItem;
+  onChange: <K extends keyof AccountantItem>(key: K, value: AccountantItem[K]) => void;
+  editMode?: boolean;
+}
+
+function AccountantForm({ formData, onChange, editMode = false }: AccountantFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="f-nombre">Nombre Completo</Label>
-          <Input
-            id="f-nombre"
-            placeholder="Ej: Pedro Pérez"
-            value={formData.nombre}
-            onChange={(e) => onChange("nombre", e.target.value)}
-          />
-        </div>
-        <div>
           <Label htmlFor="f-cedula">Cédula</Label>
           <Input
             id="f-cedula"
-            placeholder="Ej: V-12.345.678"
-            value={formData.cedula}
-            onChange={(e) => onChange("cedula", e.target.value)}
+            placeholder="Ej: V-12345678"
+            value={formData.ced_ctd}
+            onChange={(e) => onChange("ced_ctd", e.target.value)}
+            disabled={editMode}
+          />
+        </div>
+        <div>
+          <Label htmlFor="f-nombre">Nombre</Label>
+          <Input
+            id="f-nombre"
+            placeholder="Ej: Pedro"
+            value={formData.nom_ctd}
+            onChange={(e) => onChange("nom_ctd", e.target.value)}
           />
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="f-telefono">Teléfono</Label>
+          <Label htmlFor="f-apellido">Apellido</Label>
           <Input
-            id="f-telefono"
-            placeholder="Ej: 0412-1234567"
-            value={formData.telefono}
-            onChange={(e) => onChange("telefono", e.target.value)}
+            id="f-apellido"
+            placeholder="Ej: Pérez"
+            value={formData.ape_ctd}
+            onChange={(e) => onChange("ape_ctd", e.target.value)}
           />
         </div>
         <div>
-          <Label htmlFor="f-correo">Correo Electrónico</Label>
+          <Label htmlFor="f-direccion">Dirección</Label>
           <Input
-            id="f-correo"
-            type="email"
-            placeholder="Ej: pedro@gmail.com"
-            value={formData.correo}
-            onChange={(e) => onChange("correo", e.target.value)}
+            id="f-direccion"
+            placeholder="Ej: Av. Bolívar 123"
+            value={formData.dir_ctd}
+            onChange={(e) => onChange("dir_ctd", e.target.value)}
           />
         </div>
       </div>
@@ -89,173 +79,91 @@ function AccountantForm({ formData, onChange }: AccountantFormProps) {
         <Label htmlFor="f-estado">Estado</Label>
         <select
           id="f-estado"
-          value={formData.estado}
-          onChange={(e) => onChange("estado", e.target.value as AccountantFormData["estado"])}
+          value={formData.sta_ctd}
+          onChange={(e) => onChange("sta_ctd", parseInt(e.target.value))}
           className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
         >
-          <option value="Active">Activo</option>
-          <option value="Pending">Pendiente</option>
-          <option value="Cancel">Inactivo</option>
+          <option value={1}>Activo</option>
+          <option value={2}>Inactivo</option>
+          <option value={3}>Pendiente</option>
         </select>
       </div>
     </Modal.Body>
   );
 }
 
+
+
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function Accountant() {
-  // --- Estados ---
-  const [accountantData, setAccountantData] = useState<AccountantItem[]>([
-    {
-      id: 1,
-      nombre: "Pedro Pérez",
-      cedula: "V-11.222.333",
-      telefono: "0414-1112233",
-      correo: "pedro@fundes.org",
-      estado: "Active",
-    },
-    {
-      id: 2,
-      nombre: "Marta Rodríguez",
-      cedula: "V-9.888.777",
-      telefono: "0424-4445566",
-      correo: "marta@fundes.org",
-      estado: "Pending",
-    },
-    {
-      id: 3,
-      nombre: "Luis Garcia",
-      cedula: "V-15.666.222",
-      telefono: "0412-7778899",
-      correo: "luis@fundes.org",
-      estado: "Active",
-    },
-  ]);
+  const {
+    loading,
+    error,
+    search,
+    setSearch,
+    filteredData,
+    selectedAccountant,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    isEditModalOpen,
+    setIsEditModalOpen,
+    isDeleteModalOpen,
+    setIsDeleteModalOpen,
+    formData,
+    openCreateModal,
+    handleCreate,
+    openEditModal,
+    handleSaveEdit,
+    openDeleteModal,
+    handleDelete,
+    handleFieldChange,
+  } = useAccountants();
 
-  const [search, setSearch] = useState("");
-  const [selectedAccountant, setSelectedAccountant] = useState<AccountantItem | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [formData, setFormData] = useState<AccountantFormData>(emptyForm);
-
-  // --- Búsqueda ---
-  const filteredData = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return accountantData;
-    return accountantData.filter(
-      (a) =>
-        a.nombre.toLowerCase().includes(q) ||
-        a.cedula.toLowerCase().includes(q) ||
-        a.correo.toLowerCase().includes(q)
-    );
-  }, [accountantData, search]);
-
-  // --- Acciones ---
-  const openCreateModal = () => {
-    setFormData(emptyForm);
-    setIsCreateModalOpen(true);
-  };
-
-  const handleCreate = () => {
-    const newAccountant: AccountantItem = {
-      id: Date.now(),
-      ...formData,
+  const statusColor = (statusId: number) => {
+    const map: Record<number, "success" | "error" | "warning"> = {
+      1: "success", // Activo
+      2: "error",   // Inactivo
+      3: "warning", // Pendiente
     };
-    setAccountantData((prev) => [...prev, newAccountant]);
-    setIsCreateModalOpen(false);
+    return map[statusId] || "warning";
   };
-
-  const openEditModal = (accountant: AccountantItem) => {
-    setSelectedAccountant(accountant);
-    setFormData({
-      nombre: accountant.nombre,
-      cedula: accountant.cedula,
-      telefono: accountant.telefono,
-      correo: accountant.correo,
-      estado: accountant.estado,
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    if (selectedAccountant) {
-      setAccountantData((prev) =>
-        prev.map((a) =>
-          a.id === selectedAccountant.id
-            ? { ...a, ...formData }
-            : a
-        )
-      );
-      setIsEditModalOpen(false);
-    }
-  };
-
-  const openDeleteModal = (accountant: AccountantItem) => {
-    setSelectedAccountant(accountant);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (selectedAccountant) {
-      setAccountantData((prev) => prev.filter((a) => a.id !== selectedAccountant.id));
-      setIsDeleteModalOpen(false);
-    }
-  };
-
-  const handleFieldChange = (key: keyof AccountantFormData, value: string) =>
-    setFormData((p) => ({ ...p, [key]: value as AccountantFormData[keyof AccountantFormData] }));
 
   // --- Columnas ---
   const columns = [
     {
       header: "Cuentadante",
-      key: "nombre",
+      key: "nom_ctd",
       render: (item: AccountantItem) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 font-semibold text-sm">
-            {item.nombre.charAt(0)}
+            {item.nom_ctd.charAt(0)}
           </div>
           <div>
             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-              {item.nombre}
+              {item.nom_ctd} {item.ape_ctd}
             </span>
             <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-              {item.cedula}
+              {item.ced_ctd}
             </span>
           </div>
         </div>
       ),
     },
     {
-      header: "Contacto",
-      key: "correo",
+      header: "Dirección",
+      key: "dir_ctd",
       render: (item: AccountantItem) => (
-        <div>
-          <span className="block text-gray-600 dark:text-gray-400 text-theme-sm">
-            {item.correo}
-          </span>
-          <span className="block text-gray-400 text-theme-xs">
-            {item.telefono}
-          </span>
-        </div>
+        <span className="text-gray-600 dark:text-gray-400 text-theme-sm">
+          {item.dir_ctd}
+        </span>
       ),
     },
     {
       header: "Estado",
-      key: "estado",
+      key: "sta_ctd",
       render: (item: AccountantItem) => (
-        <Badge
-          size="sm"
-          color={
-            item.estado === "Active"
-              ? "success"
-              : item.estado === "Pending"
-                ? "warning"
-                : "error"
-          }
-        >
-          {item.estado === "Active" ? "Activo" : item.estado === "Pending" ? "Pendiente" : "Inactivo"}
+        <Badge size="sm" color={statusColor(item.sta_ctd)}>
+          {item.nom_sta || statesMap[item.sta_ctd]}
         </Badge>
       ),
     },
@@ -297,11 +205,8 @@ export default function Accountant() {
               size="md"
               variant="primary"
               className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 
-             /* Sombra inicial negra y notable */
              shadow-lg shadow-black/20 
-             /* Animación */
              transition-all duration-300 ease-in-out
-             /* Estado Hover: sube y la sombra se vuelve más profunda */
              hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
               startIcon={<UserCircleIcon className="size-5" />}
               onClick={openCreateModal}
@@ -311,10 +216,11 @@ export default function Accountant() {
 
             <div className="relative w-full sm:max-w-[350px]">
               <Input
-                placeholder="Buscar por nombre, cédula o correo..."
+                placeholder="Buscar por nombre, apellido, cédula o dirección..."
                 type="text"
                 className="pl-[62px]"
                 value={search}
+                autoComplete="off"
                 onChange={(e) => setSearch(e.target.value)}
               />
               <span className="absolute left-0 top-1/2 -translate-y-1/2 border-r border-gray-200 px-3.5 py-2 text-gray-500 dark:border-gray-800">
@@ -323,7 +229,11 @@ export default function Accountant() {
             </div>
           </div>
 
-          {filteredData.length === 0 ? (
+          {loading ? (
+            <div className="py-12 text-center text-sm text-gray-500">Cargando cuentadantes...</div>
+          ) : error ? (
+            <div className="py-12 text-center text-sm text-red-500">Error: {error}</div>
+          ) : filteredData.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
               No se encontraron cuentadantes que coincidan con &quot;{search}&quot;.
             </p>
@@ -350,7 +260,7 @@ export default function Accountant() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Cuentadante</Modal.Header>
-        <AccountantForm formData={formData} onChange={handleFieldChange} />
+        <AccountantForm formData={formData} onChange={handleFieldChange} editMode />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar
@@ -370,7 +280,7 @@ export default function Accountant() {
               <TrashBinIcon className="size-7" />
             </div>
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              ¿Eliminar a {selectedAccountant?.nombre}?
+              ¿Eliminar a {selectedAccountant?.nom_ctd} {selectedAccountant?.ape_ctd}?
             </h3>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
               Esta acción eliminará permanentemente al cuentadante del sistema.

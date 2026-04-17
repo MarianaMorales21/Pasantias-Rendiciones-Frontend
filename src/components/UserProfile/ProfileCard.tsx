@@ -7,24 +7,24 @@ import Label from "../form/Label";
 
 export default function ProfileCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  
+
   const [formData, setFormData] = useState({
     nombre: "Administrador",
     apellido: "de Rendiciones",
     email: "admin@fundes.org",
     telefono: "+58 212 555 1234",
     cargo: "Coordinador de Finanzas - FUNDES",
-    ubicacion: "Caracas, Venezuela"
+    ubicacion: "Estado Tachira"
   });
 
-  const [displayData, setDisplayData] = useState({...formData});
+  const [displayData, setDisplayData] = useState({ ...formData });
 
   const handleFieldChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
-    setDisplayData({...formData});
+    setDisplayData({ ...formData });
     console.log("Saving changes...", formData);
     closeModal();
   };
@@ -37,7 +37,7 @@ export default function ProfileCard() {
           <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 font-bold text-4xl border-4 border-white dark:border-gray-800 shadow-xl">
             {displayData.nombre.charAt(0)}
           </div>
-          
+
           <div className="flex-1 text-center lg:text-left">
             <h4 className="mb-2 text-2xl font-bold text-gray-800 dark:text-white/90">
               {displayData.nombre} {displayData.apellido}
@@ -164,7 +164,7 @@ export default function ProfileCard() {
                 <Input type="text" value={formData.cargo} onChange={(e) => handleFieldChange("cargo", e.target.value)} placeholder="Describe tu rol en la institución" />
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 mt-10 justify-center lg:justify-end">
               <Button size="sm" variant="outline" onClick={closeModal} className="rounded-xl px-6">
                 Cancelar

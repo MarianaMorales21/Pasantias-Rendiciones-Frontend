@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import {  } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ComponentCard from "../components/common/ComponentCard";
 import PageMeta from "../components/common/PageMeta";
@@ -8,6 +8,8 @@ import Input from "../components/form/input/InputField";
 import Label from "../components/form/Label";
 import Badge from "../components/ui/badge/Badge";
 import { Modal } from "../components/ui/modal/index";
+import { useBeneficiaries } from "../hooks/useBeneficiaries";
+import { BeneficiaryItem } from "../types/beneficiary";
 import {
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -15,260 +17,145 @@ import {
   TrashBinIcon,
 } from "../icons";
 
-// ─── Tipos e Interfaces al inicio ──────────────
-interface BeneficiaryItem {
-  id: number;
-  nombre: string;
-  cedula: string;
-  image: string;
-  programa: string;
-  estado: "Active" | "Pending" | "Cancel";
-  monto: string;
-}
-
-type BeneficiaryFormData = Omit<BeneficiaryItem, "id" | "image">;
-
-interface BeneficiaryFormProps {
-  formData: BeneficiaryFormData;
-  onChange: (key: keyof BeneficiaryFormData, value: string) => void;
-}
-
-const emptyForm: BeneficiaryFormData = {
-  nombre: "",
-  cedula: "",
-  programa: "",
-  estado: "Active",
-  monto: "",
+// --- Mapeos de Estados ---
+const statesMap: Record<number, string> = {
+  1: "Activo",
+  2: "Inactivo",
+  3: "Pendiente",
 };
 
 // ─── Componente de formulario ───────────────────────
-function BeneficiaryForm({ formData, onChange }: BeneficiaryFormProps) {
+interface BeneficiaryFormProps {
+  formData: BeneficiaryItem;
+  onChange: <K extends keyof BeneficiaryItem>(key: K, value: BeneficiaryItem[K]) => void;
+  editMode?: boolean;
+}
+
+function BeneficiaryForm({ formData, onChange, editMode = false }: BeneficiaryFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="f-rif">RIF / Cédula</Label>
+          <Input
+            id="f-rif"
+            placeholder="Ej: V-12345678"
+            value={formData.rif_ben}
+            onChange={(e) => onChange("rif_ben", e.target.value)}
+            disabled={editMode}
+          />
+        </div>
         <div>
           <Label htmlFor="f-nombre">Nombre completo</Label>
           <Input
             id="f-nombre"
             placeholder="Ej: María González"
-            value={formData.nombre}
-            onChange={(e) => onChange("nombre", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="f-cedula">Cédula</Label>
-          <Input
-            id="f-cedula"
-            placeholder="Ej: V-12.345.678"
-            value={formData.cedula}
-            onChange={(e) => onChange("cedula", e.target.value)}
+            value={formData.nom_ben}
+            onChange={(e) => onChange("nom_ben", e.target.value)}
           />
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="f-programa">Programa</Label>
+          <Label htmlFor="f-direccion">Dirección</Label>
           <Input
-            id="f-programa"
-            placeholder="Ej: Programa Alimentario"
-            value={formData.programa}
-            onChange={(e) => onChange("programa", e.target.value)}
+            id="f-direccion"
+            placeholder="Ej: Av. Principal 123"
+            value={formData.dir_ben}
+            onChange={(e) => onChange("dir_ben", e.target.value)}
           />
         </div>
         <div>
           <Label htmlFor="f-estado">Estado</Label>
           <select
             id="f-estado"
-            value={formData.estado}
-            onChange={(e) => onChange("estado", e.target.value)}
+            value={formData.sta_ben}
+            onChange={(e) => onChange("sta_ben", parseInt(e.target.value))}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           >
-            <option value="Active">Activo</option>
-            <option value="Pending">Pendiente</option>
-            <option value="Cancel">Cancelado</option>
+            <option value={1}>Activo</option>
+            <option value={2}>Inactivo</option>
+            <option value={3}>Pendiente</option>
           </select>
         </div>
-      </div>
-      <div>
-        <Label htmlFor="f-monto">Monto (Bs.)</Label>
-        <Input
-          id="f-monto"
-          placeholder="Ej: 500.000"
-          value={formData.monto}
-          onChange={(e) => onChange("monto", e.target.value)}
-        />
       </div>
     </Modal.Body>
   );
 }
 
+
+
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function Beneficiary() {
-  // --- Estados ---
-  const [beneficiaryData, setBeneficiaryData] = useState<BeneficiaryItem[]>([
-    {
-      id: 1,
-      nombre: "María González",
-      cedula: "V-12.345.678",
-      image: "/images/user/user-17.jpg",
-      programa: "Programa Alimentario",
-      estado: "Active",
-      monto: "500.000",
-    },
-    {
-      id: 2,
-      nombre: "José Ramírez",
-      cedula: "V-9.876.543",
-      image: "/images/user/user-18.jpg",
-      programa: "Apoyo Educativo",
-      estado: "Pending",
-      monto: "350.000",
-    },
-    {
-      id: 3,
-      nombre: "Ana Pérez",
-      cedula: "V-15.432.100",
-      image: "/images/user/user-17.jpg",
-      programa: "Asistencia Médica",
-      estado: "Active",
-      monto: "750.000",
-    },
-    {
-      id: 4,
-      nombre: "Carlos López",
-      cedula: "V-7.654.321",
-      image: "/images/user/user-20.jpg",
-      programa: "Vivienda Digna",
-      estado: "Cancel",
-      monto: "1.200.000",
-    },
-  ]);
+  const {
+    loading,
+    error,
+    search,
+    setSearch,
+    filteredData,
+    selectedBeneficiary,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    isEditModalOpen,
+    setIsEditModalOpen,
+    isDeleteModalOpen,
+    setIsDeleteModalOpen,
+    formData,
+    openCreateModal,
+    handleCreate,
+    openEditModal,
+    handleSaveEdit,
+    openDeleteModal,
+    handleDelete,
+    handleFieldChange,
+  } = useBeneficiaries();
 
-  const [search, setSearch] = useState("");
-  const [selectedBeneficiary, setSelectedBeneficiary] = useState<BeneficiaryItem | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [formData, setFormData] = useState<BeneficiaryFormData>(emptyForm);
-
-  // --- Búsqueda ---
-  const filteredData = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return beneficiaryData;
-    return beneficiaryData.filter(
-      (b) =>
-        b.nombre.toLowerCase().includes(q) ||
-        b.cedula.toLowerCase().includes(q) ||
-        b.programa.toLowerCase().includes(q)
-    );
-  }, [beneficiaryData, search]);
-
-  // --- Acciones ---
-  const openCreateModal = () => {
-    setFormData(emptyForm);
-    setIsCreateModalOpen(true);
-  };
-
-  const handleCreate = () => {
-    const newBeneficiary: BeneficiaryItem = {
-      id: Date.now(),
-      image: "/images/user/user-17.jpg", // Imagen por defecto
-      ...formData,
+  const statusColor = (statusId: number) => {
+    const map: Record<number, "success" | "error" | "warning"> = {
+      1: "success", // Activo
+      2: "error",   // Inactivo
+      3: "warning", // Pendiente
     };
-    setBeneficiaryData((prev) => [...prev, newBeneficiary]);
-    setIsCreateModalOpen(false);
+    return map[statusId] || "warning";
   };
-
-  const openEditModal = (beneficiary: BeneficiaryItem) => {
-    setSelectedBeneficiary(beneficiary);
-    const { nombre, cedula, programa, estado, monto } = beneficiary;
-    setFormData({ nombre, cedula, programa, estado, monto });
-    setIsEditModalOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    if (selectedBeneficiary) {
-      setBeneficiaryData((prev) =>
-        prev.map((b) =>
-          b.id === selectedBeneficiary.id
-            ? { ...b, ...formData }
-            : b
-        )
-      );
-      setIsEditModalOpen(false);
-    }
-  };
-
-  const openDeleteModal = (beneficiary: BeneficiaryItem) => {
-    setSelectedBeneficiary(beneficiary);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (selectedBeneficiary) {
-      setBeneficiaryData((prev) => prev.filter((b) => b.id !== selectedBeneficiary.id));
-      setIsDeleteModalOpen(false);
-    }
-  };
-
-  const handleFieldChange = (key: keyof BeneficiaryFormData, value: string) =>
-    setFormData((p) => ({ ...p, [key]: value as BeneficiaryFormData[keyof BeneficiaryFormData] }));
 
   // --- Columnas ---
   const columns = [
     {
       header: "Beneficiario",
-      key: "nombre",
+      key: "nom_ben",
       render: (item: BeneficiaryItem) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 font-semibold text-sm">
-            {item.nombre.charAt(0)}
+            {item.nom_ben.charAt(0)}
           </div>
           <div>
             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-              {item.nombre}
+              {item.nom_ben}
             </span>
             <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-              {item.cedula}
+              {item.rif_ben}
             </span>
           </div>
         </div>
       ),
     },
     {
-      header: "Programa",
-      key: "programa",
+      header: "Dirección",
+      key: "dir_ben",
       render: (item: BeneficiaryItem) => (
         <span className="text-gray-600 dark:text-gray-400 text-theme-sm">
-          {item.programa}
+          {item.dir_ben}
         </span>
       ),
     },
     {
       header: "Estado",
-      key: "estado",
+      key: "sta_ben",
       render: (item: BeneficiaryItem) => (
-        <Badge
-          size="sm"
-          color={
-            item.estado === "Active"
-              ? "success"
-              : item.estado === "Pending"
-                ? "warning"
-                : "error"
-          }
-        >
-          {item.estado}
+        <Badge size="sm" color={statusColor(item.sta_ben)}>
+          {item.nom_sta || statesMap[item.sta_ben]}
         </Badge>
-      ),
-    },
-    {
-      header: "Monto",
-      key: "monto",
-      render: (item: BeneficiaryItem) => (
-        <span className="font-medium text-gray-800 dark:text-white/90">
-          Bs. {item.monto}
-        </span>
       ),
     },
     {
@@ -309,11 +196,8 @@ export default function Beneficiary() {
               size="md"
               variant="primary"
               className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 
-             /* Sombra inicial negra y notable */
              shadow-lg shadow-black/20 
-             /* Animación */
              transition-all duration-300 ease-in-out
-             /* Estado Hover: sube y la sombra se vuelve más profunda */
              hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
               startIcon={<UserCircleIcon className="size-5" />}
               onClick={openCreateModal}
@@ -323,10 +207,11 @@ export default function Beneficiary() {
 
             <div className="relative w-full sm:max-w-[350px]">
               <Input
-                placeholder="Buscar beneficiario, cédula o programa..."
+                placeholder="Buscar beneficiario, rif o dirección..."
                 type="text"
                 className="pl-[62px]"
                 value={search}
+                autoComplete="off"
                 onChange={(e) => setSearch(e.target.value)}
               />
               <span className="absolute left-0 top-1/2 -translate-y-1/2 border-r border-gray-200 px-3.5 py-2 text-gray-500 dark:border-gray-800">
@@ -335,7 +220,11 @@ export default function Beneficiary() {
             </div>
           </div>
 
-          {filteredData.length === 0 ? (
+          {loading ? (
+            <div className="py-12 text-center text-sm text-gray-500">Cargando beneficiarios...</div>
+          ) : error ? (
+            <div className="py-12 text-center text-sm text-red-500">Error: {error}</div>
+          ) : filteredData.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
               No se encontraron beneficiarios que coincidan con &quot;{search}&quot;.
             </p>
@@ -362,7 +251,7 @@ export default function Beneficiary() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Beneficiario</Modal.Header>
-        <BeneficiaryForm formData={formData} onChange={handleFieldChange} />
+        <BeneficiaryForm formData={formData} onChange={handleFieldChange} editMode />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar
@@ -382,7 +271,7 @@ export default function Beneficiary() {
               <TrashBinIcon className="size-7" />
             </div>
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              ¿Eliminar a {selectedBeneficiary?.nombre}?
+              ¿Eliminar a {selectedBeneficiary?.nom_ben}?
             </h3>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
               Esta acción eliminará permanentemente al beneficiario del sistema.

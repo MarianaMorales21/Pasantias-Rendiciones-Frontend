@@ -1,14 +1,37 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [cedula, setCedula] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+
+    try {
+      await login(cedula, password);
+      navigate("/");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorMsg(message || "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="w-full bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
@@ -26,16 +49,25 @@ export default function SignInForm() {
           </Link>
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()}>
+        <form onSubmit={handleLogin}>
           <div className="space-y-6">
-            {/* Email Field */}
+            {/* Error Message */}
+            {errorMsg && (
+              <div className="rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-3 text-sm text-red-600 dark:text-red-400">
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Cedula Field */}
             <div>
               <Label className="mb-2.5 block font-medium text-gray-700 dark:text-gray-300">
                 Cedula
               </Label>
               <Input 
                 type="text"
-                placeholder="12.345.678" 
+                placeholder="12345678" 
+                value={cedula}
+                onChange={(e) => setCedula(e.target.value)}
                 className="w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
@@ -49,6 +81,8 @@ export default function SignInForm() {
                 <Input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20"
                 />
                 <button
@@ -84,11 +118,12 @@ export default function SignInForm() {
             {/* Login Button */}
             <div className="pt-2">
               <Button 
+                type="submit"
                 className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]" 
                 size="md"
-                onClick={() => Navigate("/")}
+                disabled={loading}
               >
-                Ingresar
+                {loading ? "Ingresando..." : "Ingresar"}
               </Button>
             </div>
           </div>
@@ -97,4 +132,3 @@ export default function SignInForm() {
     </div>
   );
 }
-

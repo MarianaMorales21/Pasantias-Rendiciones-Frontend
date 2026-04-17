@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import {  } from "react"; // O simplemente eliminar si no hay otros imports de react
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ComponentCard from "../components/common/ComponentCard";
 import PageMeta from "../components/common/PageMeta";
@@ -8,6 +8,8 @@ import Input from "../components/form/input/InputField";
 import Label from "../components/form/Label";
 import Badge from "../components/ui/badge/Badge";
 import { Modal } from "../components/ui/modal/index";
+import { usePrograms } from "../hooks/usePrograms";
+import { ProgramsItem } from "../types/programs";
 import {
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -15,230 +17,117 @@ import {
   TrashBinIcon,
 } from "../icons";
 
-// ─── Tipos e Interfaces ──────────────────────────────────────────────────────
-interface ProgramItem {
-  id: number;
-  nombre: string;
-  codigo: string;
-  descripcion: string;
-  presupuesto: string;
-  estado: "Active" | "Pending" | "Cancel";
-}
-
-type ProgramFormData = {
-  nombre: string;
-  codigo: string;
-  descripcion: string;
-  presupuesto: string;
-  estado: "Active" | "Pending" | "Cancel";
+// --- Mapeos de Estados ---
+const statesMap: Record<number, string> = {
+  1: "Activo",
+  2: "Inactivo",
+  3: "Pendiente",
 };
 
+// ─── Componente de formulario ────────────────────────────────────────────────
 interface ProgramFormProps {
-  formData: ProgramFormData;
-  onChange: (key: keyof ProgramFormData, value: string) => void;
+  formData: ProgramsItem;
+  onChange: <K extends keyof ProgramsItem>(key: K, value: ProgramsItem[K]) => void;
 }
 
-const emptyForm: ProgramFormData = {
-  nombre: "",
-  codigo: "",
-  descripcion: "",
-  presupuesto: "",
-  estado: "Active",
-};
-
-// ─── Componente de formulario (FUERA del padre para evitar pérdida de foco) ──
 function ProgramForm({ formData, onChange }: ProgramFormProps) {
   return (
     <Modal.Body className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="f-nombre">Nombre del Programa</Label>
-          <Input
-            id="f-nombre"
-            placeholder="Ej: Programa Alimentario"
-            value={formData.nombre}
-            onChange={(e) => onChange("nombre", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="f-codigo">Código</Label>
-          <Input
-            id="f-codigo"
-            placeholder="Ej: PROG-001"
-            value={formData.codigo}
-            onChange={(e) => onChange("codigo", e.target.value)}
-          />
-        </div>
-      </div>
       <div>
-        <Label htmlFor="f-descripcion">Descripción</Label>
+        <Label htmlFor="f-nombre">Nombre del Programa</Label>
         <Input
-          id="f-descripcion"
-          placeholder="Ej: Asistencia alimentaria a familias vulnerables"
-          value={formData.descripcion}
-          onChange={(e) => onChange("descripcion", e.target.value)}
+          id="f-nombre"
+          placeholder="Ej: Programa Alimentario"
+          value={formData.nom_pro}
+          onChange={(e) => onChange("nom_pro", e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="f-presupuesto">Presupuesto (Bs.)</Label>
-          <Input
-            id="f-presupuesto"
-            placeholder="Ej: 10.000.000"
-            value={formData.presupuesto}
-            onChange={(e) => onChange("presupuesto", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="f-estado">Estado</Label>
-          <select
-            id="f-estado"
-            value={formData.estado}
-            onChange={(e) => onChange("estado", e.target.value)}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          >
-            <option value="Active">Activo</option>
-            <option value="Pending">Pendiente</option>
-            <option value="Cancel">Inactivo</option>
-          </select>
-        </div>
+      <div>
+        <Label htmlFor="f-estado">Estado</Label>
+        <select
+          id="f-estado"
+          value={formData.sta_pro}
+          onChange={(e) => onChange("sta_pro", parseInt(e.target.value))}
+          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+        >
+          <option value={1}>Activo</option>
+          <option value={2}>Inactivo</option>
+          <option value={3}>Pendiente</option>
+        </select>
       </div>
     </Modal.Body>
   );
 }
 
+
+
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function Programs() {
-  const [programData, setProgramData] = useState<ProgramItem[]>([
-    { id: 1, nombre: "Programa Alimentario",  codigo: "PROG-001", descripcion: "Asistencia alimentaria a familias",    presupuesto: "10.000.000", estado: "Active"  },
-    { id: 2, nombre: "Apoyo Educativo",       codigo: "PROG-002", descripcion: "Becas y útiles para estudiantes",      presupuesto: "5.500.000",  estado: "Active"  },
-    { id: 3, nombre: "Asistencia Médica",     codigo: "PROG-003", descripcion: "Cobertura médica a comunidades",       presupuesto: "8.200.000",  estado: "Pending" },
-    { id: 4, nombre: "Vivienda Digna",        codigo: "PROG-004", descripcion: "Mejoras de infraestructura habitacional", presupuesto: "15.000.000", estado: "Cancel" },
-  ]);
+  const {
+    loading,
+    error,
+    search,
+    setSearch,
+    filteredData,
+    selectedProgram,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    isEditModalOpen,
+    setIsEditModalOpen,
+    isDeleteModalOpen,
+    setIsDeleteModalOpen,
+    formData,
+    openCreateModal,
+    handleCreate,
+    openEditModal,
+    handleSaveEdit,
+    openDeleteModal,
+    handleDelete,
+    handleFieldChange,
+  } = usePrograms();
 
-  const [search, setSearch]                   = useState("");
-  const [selectedProgram, setSelectedProgram] = useState<ProgramItem | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen,   setIsEditModalOpen]   = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [formData, setFormData]               = useState<ProgramFormData>(emptyForm);
-
-  // --- Búsqueda ---
-  const filteredData = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return programData;
-    return programData.filter(
-      (p) =>
-        p.nombre.toLowerCase().includes(q) ||
-        p.codigo.toLowerCase().includes(q) ||
-        p.descripcion.toLowerCase().includes(q)
-    );
-  }, [programData, search]);
-
-  // --- Acciones ---
-  const openCreateModal = () => {
-    setFormData(emptyForm);
-    setIsCreateModalOpen(true);
+  const statusColor = (statusId: number) => {
+    const map: Record<number, "success" | "error" | "warning"> = {
+      1: "success", // Activo
+      2: "error",   // Inactivo
+      3: "warning", // Pendiente
+    };
+    return map[statusId] || "warning";
   };
-
-  const handleCreate = () => {
-    const newProgram: ProgramItem = { id: Date.now(), ...formData };
-    setProgramData((prev) => [...prev, newProgram]);
-    setIsCreateModalOpen(false);
-  };
-
-  const openEditModal = (program: ProgramItem) => {
-    setSelectedProgram(program);
-    setFormData({
-      nombre:      program.nombre,
-      codigo:      program.codigo,
-      descripcion: program.descripcion,
-      presupuesto: program.presupuesto,
-      estado:      program.estado,
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    if (selectedProgram) {
-      setProgramData((prev) =>
-        prev.map((p) => (p.id === selectedProgram.id ? { ...p, ...formData } : p))
-      );
-      setIsEditModalOpen(false);
-    }
-  };
-
-  const openDeleteModal = (program: ProgramItem) => {
-    setSelectedProgram(program);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (selectedProgram) {
-      setProgramData((prev) => prev.filter((p) => p.id !== selectedProgram.id));
-      setIsDeleteModalOpen(false);
-    }
-  };
-
-  const handleFieldChange = (key: keyof ProgramFormData, value: string) =>
-    setFormData((prev) => ({ ...prev, [key]: value }));
 
   // --- Columnas ---
   const columns = [
     {
-      header: "Programa",
-      key: "nombre",
-      render: (item: ProgramItem) => (
-        <div>
-          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-            {item.nombre}
-          </span>
-          <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-            {item.codigo}
-          </span>
-        </div>
+      header: "Código",
+      key: "cod_pro",
+      render: (item: ProgramsItem) => (
+        <span className="font-medium text-gray-800 dark:text-white/90">
+          #{item.cod_pro}
+        </span>
       ),
     },
     {
-      header: "Descripción",
-      key: "descripcion",
-      render: (item: ProgramItem) => (
-        <span className="text-gray-600 dark:text-gray-400 text-theme-sm">
-          {item.descripcion}
+      header: "Programa",
+      key: "nom_pro",
+      render: (item: ProgramsItem) => (
+        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+          {item.nom_pro}
         </span>
       ),
     },
     {
       header: "Estado",
-      key: "estado",
-      render: (item: ProgramItem) => (
-        <Badge
-          size="sm"
-          color={
-            item.estado === "Active"
-              ? "success"
-              : item.estado === "Pending"
-                ? "warning"
-                : "error"
-          }
-        >
-          {item.estado === "Active" ? "Activo" : item.estado === "Pending" ? "Pendiente" : "Inactivo"}
+      key: "sta_pro",
+      render: (item: ProgramsItem) => (
+        <Badge size="sm" color={statusColor(item.sta_pro)}>
+          {item.nom_sta || statesMap[item.sta_pro]}
         </Badge>
-      ),
-    },
-    {
-      header: "Presupuesto",
-      key: "presupuesto",
-      render: (item: ProgramItem) => (
-        <span className="font-medium text-gray-800 dark:text-white/90">
-          Bs. {item.presupuesto}
-        </span>
       ),
     },
     {
       header: "Acciones",
       key: "actions",
-      render: (item: ProgramItem) => (
+      render: (item: ProgramsItem) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => openEditModal(item)}
@@ -285,6 +174,7 @@ export default function Programs() {
                 type="text"
                 className="pl-[62px]"
                 value={search}
+                autoComplete="off"
                 onChange={(e) => setSearch(e.target.value)}
               />
               <span className="absolute left-0 top-1/2 -translate-y-1/2 border-r border-gray-200 px-3.5 py-2 text-gray-500 dark:border-gray-800">
@@ -293,7 +183,11 @@ export default function Programs() {
             </div>
           </div>
 
-          {filteredData.length === 0 ? (
+          {loading ? (
+            <div className="py-12 text-center text-sm text-gray-500">Cargando programas...</div>
+          ) : error ? (
+            <div className="py-12 text-center text-sm text-red-500">Error: {error}</div>
+          ) : filteredData.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
               No se encontraron programas que coincidan con &quot;{search}&quot;.
             </p>
@@ -336,7 +230,7 @@ export default function Programs() {
               <TrashBinIcon className="size-7" />
             </div>
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              ¿Eliminar &quot;{selectedProgram?.nombre}&quot;?
+              ¿Eliminar &quot;{selectedProgram?.nom_pro}&quot;?
             </h3>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
               Esta acción eliminará permanentemente el programa del sistema y no se puede deshacer.

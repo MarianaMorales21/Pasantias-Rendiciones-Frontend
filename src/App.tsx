@@ -12,39 +12,44 @@ import Beneficiary from "./pages/Beneficiary";
 import Order from "./pages/Order";
 import Reports from "./pages/Reports";
 import Surrender from "./pages/Surrender";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PublicRoute from "./components/auth/PublicRoute";
 
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+          {/* Dashboard Layout - Protected */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route index path="/" element={<Home />} />
 
-            {/* Others Page */}
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/programs" element={<Programs />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/accountant" element={<Accountant />} />
-            <Route path="/beneficiary" element={<Beneficiary />} />
-            <Route path="/order" element={<Order />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/surrender" element={<Surrender />} />
-
-
+              {/* Others Page */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/programs" element={<Programs />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/accountant" element={<Accountant />} />
+              <Route path="/beneficiary" element={<Beneficiary />} />
+              <Route path="/order" element={<Order />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/surrender" element={<Surrender />} />
+            </Route>
           </Route>
 
-          {/* Auth Layout */}
-          <Route path="/signin" element={<SignIn />} />
+          {/* Auth Layout - Public Only */}
+          <Route element={<PublicRoute />}>
+            <Route path="/signin" element={<SignIn />} />
+          </Route>
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
 
         </Routes>
       </Router>
-    </>
+    </AuthProvider>
   );
 }

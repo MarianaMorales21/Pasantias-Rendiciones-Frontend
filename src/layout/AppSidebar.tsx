@@ -41,7 +41,7 @@ const navItems: NavItem[] = [
     path: "/beneficiary",
   },
   {
-    name: "Orden",
+    name: "Ordenes de Pago",
     icon: <ClipboardIcon />,
     path: "/order",
   },
