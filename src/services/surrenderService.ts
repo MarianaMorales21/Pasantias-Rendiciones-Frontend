@@ -5,10 +5,12 @@ import { SurrenderItem } from "../types/surrender";
 const api = helpHttp();
 const url = `${API_BASE_URL}/rendition`;
 
-export const asurrenderService = {
+export const surrenderService = {
     getAll: () => api.get(url) as Promise<ApiResponse<SurrenderItem[]>>,
     getOne: (codigo: string) => api.get(`${url}/${codigo}`) as Promise<ApiResponse<SurrenderItem>>,
-    create: (data: Partial<SurrenderItem>) => api.post(url, {body: data}) as Promise<ApiResponse<SurrenderItem>>,
+    getByOpg: (opg_rnd: number | string) => api.get(`${url}/opg/${opg_rnd}`) as Promise<ApiResponse<SurrenderItem[]>>,
+    create: (data: Partial<SurrenderItem>) => api.post(url, { body: data }) as Promise<ApiResponse<SurrenderItem>>,
     update: (codigo: string, data: Partial<SurrenderItem>) => api.put(`${url}/${codigo}`, { body: data }) as Promise<ApiResponse<SurrenderItem>>,
-    delete: (codigo: string) => api.del(`${url}/${codigo}`) as Promise<ApiResponse<{message: string}>>,
+    delete: (codigo: string) => api.del(`${url}/${codigo}`) as Promise<ApiResponse<{ message: string }>>,
 }
+

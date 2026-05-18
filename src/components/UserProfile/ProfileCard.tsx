@@ -1,176 +1,243 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { useAuth } from "../../context/AuthContext";
+import { EyeIcon, EyeCloseIcon } from "../../icons";
 
 export default function ProfileCard() {
+  const { user, changePassword } = useAuth();
   const { isOpen, openModal, closeModal } = useModal();
+  const { isOpen: isPassOpen, openModal: openPassModal, closeModal: closePassModal } = useModal();
 
   const [formData, setFormData] = useState({
-    nombre: "Administrador",
-    apellido: "de Rendiciones",
-    email: "admin@fundes.org",
-    telefono: "+58 212 555 1234",
-    cargo: "Coordinador de Finanzas - FUNDES",
-    ubicacion: "Estado Tachira"
+    nombre: "",
+    email: "",
+    cargo: "",
+    rol: "",
+    cedula: "",
   });
 
-  const [displayData, setDisplayData] = useState({ ...formData });
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
-  const handleFieldChange = (field: keyof typeof formData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const [showPass, setShowPass] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        nombre: user.nom_usu || "",
+        email: user.ema_usu || "",
+        cargo: user.rol_nom || "Usuario del Sistema",
+        rol: user.rol_nom || "General",
+        cedula: user.ced_usu || "",
+      });
+    }
+  }, [user]);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setErrorMsg("Las contraseñas nuevas no coinciden");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setErrorMsg("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await changePassword(passwordData.oldPassword, passwordData.newPassword);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorMsg(message || "Error al cambiar la contraseña");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSave = () => {
-    setDisplayData({ ...formData });
-    console.log("Saving changes...", formData);
-    closeModal();
-  };
+  if (!user) return null;
 
   return (
     <>
-      <div className="p-6 border border-gray-200 rounded-3xl bg-white dark:border-gray-800 dark:bg-white/[0.03] shadow-sm">
-        {/* Header Section: Profile Image + Main Title */}
-        <div className="flex flex-col items-center gap-6 mb-8 lg:flex-row lg:items-center">
-          <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 font-bold text-4xl border-4 border-white dark:border-gray-800 shadow-xl">
-            {displayData.nombre.charAt(0)}
+      <div className="p-6 md:p-8 border border-gray-200 rounded-[2.5rem] bg-white dark:border-gray-800 dark:bg-white/[0.03] shadow-xl shadow-gray-100 dark:shadow-none">
+        {/* Header Section */}
+        <div className="flex flex-col items-center gap-8 mb-10 lg:flex-row lg:items-center">
+          <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-black text-5xl border-8 border-blue-50 dark:border-gray-800 shadow-2xl">
+            {user.nom_usu?.charAt(0).toUpperCase()}
           </div>
 
-          <div className="flex-1 text-center lg:text-left">
-            <h4 className="mb-2 text-2xl font-bold text-gray-800 dark:text-white/90">
-              {displayData.nombre} {displayData.apellido}
+          <div className="flex-1 text-center lg:text-left space-y-2">
+            <h4 className="text-3xl font-black text-gray-800 dark:text-white/90 tracking-tight">
+              {user.nom_usu}
             </h4>
-            <div className="flex flex-col items-center gap-1 lg:flex-row lg:gap-3 lg:justify-start">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {displayData.cargo}
-              </p>
-              <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 lg:block"></div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {displayData.ubicacion}
+            <div className="flex flex-col items-center gap-2 lg:flex-row lg:gap-4 lg:justify-start">
+              <span className="px-4 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-black rounded-full uppercase tracking-widest">
+                {user.rol_nom || "USUARIO"}
+              </span>
+              <div className="hidden h-4 w-px bg-gray-300 dark:bg-gray-700 lg:block"></div>
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                {user.ema_usu}
               </p>
             </div>
           </div>
 
-          <div className="mt-4 lg:mt-0">
+          <div className="flex flex-col sm:flex-row gap-3 mt-6 lg:mt-0">
+            <button
+              onClick={openPassModal}
+              className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl px-6 py-4 shadow-lg shadow-amber-500/20 transition-all active:scale-95"
+            >
+              Cambiar Clave
+            </button>
             <button
               onClick={openModal}
-              className="flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-3 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40"
+              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl px-6 py-4 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
             >
-              <svg
-                className="fill-current"
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z"
-                  fill="currentColor"
-                />
-              </svg>
-              Editar Perfil
+              Editar Datos
             </button>
           </div>
         </div>
 
-        <hr className="my-8 border-gray-100 dark:border-gray-800" />
+        <div className="h-px bg-gray-100 dark:bg-gray-800 mb-10" />
 
-        {/* Details Section */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Nombre Completo
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              Cédula de Identidad
             </p>
-            <p className="text-base font-medium text-gray-800 dark:text-white/90">
-              {displayData.nombre} {displayData.apellido}
+            <p className="text-lg font-bold text-gray-800 dark:text-white/90">
+              {user.ced_usu}
             </p>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Correo Electrónico
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              Nombre de Usuario
             </p>
-            <p className="text-base font-medium text-gray-800 dark:text-white/90">
-              {displayData.email}
-            </p>
-          </div>
-
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Teléfono de Contacto
-            </p>
-            <p className="text-base font-medium text-gray-800 dark:text-white/90">
-              {displayData.telefono}
+            <p className="text-lg font-bold text-gray-800 dark:text-white/90 uppercase">
+              {user.nom_usu}
             </p>
           </div>
 
-          <div className="md:col-span-2 lg:col-span-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Cargo / Biografía
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              Estado de Cuenta
             </p>
-            <p className="text-base font-medium text-gray-800 dark:text-white/90">
-              {displayData.cargo}
+            <div className="flex items-center gap-2">
+              <div className={`h-2.5 w-2.5 rounded-full ${user.sta_usu === 1 ? "bg-emerald-500" : "bg-red-500"}`}></div>
+              <p className="text-lg font-bold text-gray-800 dark:text-white/90">
+                {user.sta_usu === 1 ? "Activo" : "Inactivo"}
+              </p>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 lg:col-span-3 space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+              Correo Institucional
+            </p>
+            <p className="text-lg font-bold text-gray-800 dark:text-white/90">
+              {user.ema_usu}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Single Consolidated Modal */}
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[750px] m-4">
-        <div className="no-scrollbar relative w-full rounded-3xl bg-white p-6 dark:bg-gray-900 lg:p-11 shadow-2xl">
-          <div className="mb-8 text-center lg:text-left">
-            <h4 className="mb-2 text-3xl font-bold text-gray-800 dark:text-white/90">
-              Configuración de Perfil
-            </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Gestiona tu información personal y profesional desde un solo lugar.
-            </p>
-          </div>
-
-          <form className="flex flex-col" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-            <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Nombre</Label>
-                <Input type="text" value={formData.nombre} onChange={(e) => handleFieldChange("nombre", e.target.value)} placeholder="Ej: Juan" />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Apellido</Label>
-                <Input type="text" value={formData.apellido} onChange={(e) => handleFieldChange("apellido", e.target.value)} placeholder="Ej: Pérez" />
-              </div>
-
-              <div className="space-y-2">
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[600px]">
+        <div className="p-8 bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl">
+          <h3 className="text-2xl font-black text-gray-800 dark:text-white mb-6">Editar Información</h3>
+          <div className="space-y-4">
+             <div className="space-y-2">
+                <Label>Nombre Completo</Label>
+                <Input value={formData.nombre} disabled className="bg-gray-50 opacity-70" />
+                <p className="text-[10px] text-gray-400 italic font-medium">* El nombre debe ser modificado por un administrador</p>
+             </div>
+             <div className="space-y-2">
                 <Label>Correo Electrónico</Label>
-                <Input type="email" value={formData.email} onChange={(e) => handleFieldChange("email", e.target.value)} placeholder="correo@ejemplo.com" />
-              </div>
+                <Input value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+             </div>
+             <div className="flex justify-end gap-3 mt-8">
+               <Button variant="outline" onClick={closeModal}>Cerrar</Button>
+               <Button className="bg-blue-600">Guardar Cambios</Button>
+             </div>
+          </div>
+        </div>
+      </Modal>
 
-              <div className="space-y-2">
-                <Label>Teléfono</Label>
-                <Input type="text" value={formData.telefono} onChange={(e) => handleFieldChange("telefono", e.target.value)} placeholder="+58 000 000 0000" />
+      <Modal isOpen={isPassOpen} onClose={closePassModal} className="max-w-[500px]">
+        <div className="p-8 bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl">
+          <div className="mb-6">
+            <h3 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Cambiar Contraseña</h3>
+            <p className="text-sm text-gray-500 font-medium">Al cambiar tu clave, se cerrará la sesión automáticamente.</p>
+          </div>
+          
+          <form onSubmit={handlePasswordChange} className="space-y-5">
+            {errorMsg && (
+              <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-100">
+                {errorMsg}
               </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label>Contraseña Actual</Label>
+              <Input 
+                type="password" 
+                placeholder="••••••••" 
+                value={passwordData.oldPassword}
+                onChange={(e) => setPasswordData({...passwordData, oldPassword: e.target.value})}
+                required
+              />
+            </div>
 
-              <div className="lg:col-span-2 space-y-2">
-                <Label>Ubicación</Label>
-                <Input type="text" value={formData.ubicacion} onChange={(e) => handleFieldChange("ubicacion", e.target.value)} placeholder="Ciudad, País" />
-              </div>
-
-              <div className="lg:col-span-2 space-y-2">
-                <Label>Cargo / Bio</Label>
-                <Input type="text" value={formData.cargo} onChange={(e) => handleFieldChange("cargo", e.target.value)} placeholder="Describe tu rol en la institución" />
+            <div className="space-y-2">
+              <Label>Nueva Contraseña</Label>
+              <div className="relative">
+                <Input 
+                  type={showPass ? "text" : "password"} 
+                  placeholder="Mínimo 6 caracteres" 
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                  required
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showPass ? <EyeIcon className="size-5" /> : <EyeCloseIcon className="size-5" />}
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 mt-10 justify-center lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal} className="rounded-xl px-6">
-                Cancelar
-              </Button>
-              <Button size="sm" type="submit" className="bg-blue-800 hover:bg-blue-900 text-white rounded-xl px-10 shadow-lg transition-all hover:-translate-y-1">
-                Guardar Cambios
+            <div className="space-y-2">
+              <Label>Confirmar Nueva Contraseña</Label>
+              <Input 
+                type="password" 
+                placeholder="Repite la nueva contraseña" 
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8">
+              <Button variant="outline" type="button" onClick={closePassModal}>Cancelar</Button>
+              <Button 
+                type="submit" 
+                className="bg-amber-500 hover:bg-amber-600 font-black"
+                disabled={loading}
+              >
+                {loading ? "Procesando..." : "Actualizar Clave"}
               </Button>
             </div>
           </form>

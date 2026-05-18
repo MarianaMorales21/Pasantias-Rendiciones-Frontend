@@ -18,35 +18,39 @@ import {
 import { useOrders } from "../hooks/useOrders";
 import { useAccountants } from "../hooks/useAccountants";
 import { useStateData } from "../hooks/useStateData";
+import { useDepartures } from "../hooks/useDepartures";
 import { OrderItem } from "../types/orders";
 import { AccountantItem } from "../types/accountant";
 import { StateItem } from "../types/state";
+import { departureItem } from "../types/departure";
 
 // ─── Tipos e Interfaces ──────────────────────────────────────────────────────
 
-type OrderFormData = Omit<OrderItem, "cod_opg" | "nom_ctd" | "ape_ctd" | "nom_sta">;
+type OrderFormData = Omit<OrderItem, "cod_opg" | "nom_ctd" | "ape_ctd" | "nom_sta" | "num_par" | "nom_par">;
 
 interface OrderFormProps {
   formData: OrderFormData;
-  onChange: (key: keyof OrderFormData, value: string | number) => void;
+  onChange: (key: keyof OrderFormData, value: string | number | null) => void;
   cuentadantes: AccountantItem[];
   states: StateItem[];
+  partidas: departureItem[];
 }
 
 const emptyForm: OrderFormData = {
   num_opg: 0,
-  ced_ctd: "",
+  ced_opg: "",
   fec_opg: new Date().toISOString().split("T")[0],
-  fco_opg: new Date().toISOString().split("T")[0],
-  asp_opg: "",
-  dcr_opg: "",
+  fco_opg: "",
   fdc_opg: new Date().toISOString().split("T")[0],
+  dcr_opg: "",
   mon_opg: "",
+  con_opg: "",
   sta_opg: 1, // Por defecto solemos usar el ID 1 o el que sea 'Pendiente'
+  par_opg: 0,
 };
 
 // ─── Componente de formulario ────────────────────────────────────────────────
-function OrderForm({ formData, onChange, cuentadantes, states }: OrderFormProps) {
+function OrderForm({ formData, onChange, cuentadantes, states, partidas }: OrderFormProps) {
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -60,12 +64,15 @@ function OrderForm({ formData, onChange, cuentadantes, states }: OrderFormProps)
             onChange={(e) => onChange("num_opg", parseInt(e.target.value) || 0)}
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="f-cuentadante">Cuentadante</Label>
           <select
             id="f-cuentadante"
-            value={formData.ced_ctd}
-            onChange={(e) => onChange("ced_ctd", e.target.value)}
+            value={formData.ced_opg}
+            onChange={(e) => onChange("ced_opg", e.target.value)}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           >
             <option value="">Seleccione un cuentadante</option>
@@ -76,61 +83,6 @@ function OrderForm({ formData, onChange, cuentadantes, states }: OrderFormProps)
             ))}
           </select>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div>
-          <Label htmlFor="f-fec">Fecha Orden</Label>
-          <Input
-            id="f-fec"
-            type="date"
-            value={formData.fec_opg ? formData.fec_opg.split('T')[0] : ""}
-            onChange={(e) => onChange("fec_opg", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="f-fco">Fecha Control</Label>
-          <Input
-            id="f-fco"
-            type="date"
-            value={formData.fco_opg ? formData.fco_opg.split('T')[0] : ""}
-            onChange={(e) => onChange("fco_opg", e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="f-fdc">Fecha Cobro</Label>
-          <Input
-            id="f-fdc"
-            type="date"
-            value={formData.fdc_opg ? formData.fdc_opg.split('T')[0] : ""}
-            onChange={(e) => onChange("fdc_opg", e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="f-asp">Aspecto</Label>
-        <Input
-          id="f-asp"
-          placeholder="Ej: ASP-000"
-          value={formData.asp_opg}
-          onChange={(e) => onChange("asp_opg", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="f-dcr">Numero de Retencion</Label>
-        <textarea
-          id="f-dcr"
-          rows={3}
-          placeholder="Numero de Retencion de la orden..."
-          value={formData.dcr_opg}
-          onChange={(e) => onChange("dcr_opg", e.target.value)}
-          className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="f-monto">Monto (Bs.)</Label>
           <Input
@@ -142,23 +94,96 @@ function OrderForm({ formData, onChange, cuentadantes, states }: OrderFormProps)
             onChange={(e) => onChange("mon_opg", e.target.value)}
           />
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="f-estado">Estado</Label>
+          <Label htmlFor="f-fec">Fecha Emisión</Label>
+          <Input
+            id="f-fec"
+            type="date"
+            value={formData.fec_opg ? formData.fec_opg.split('T')[0] : ""}
+            onChange={(e) => onChange("fec_opg", e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="f-fco">Fecha Cobro (Opcional)</Label>
+          <Input
+            id="f-fco"
+            type="date"
+            value={formData.fco_opg ? formData.fco_opg.split('T')[0] : ""}
+            onChange={(e) => onChange("fco_opg", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="f-fdc">Fecha Decreto</Label>
+          <Input
+            id="f-fdc"
+            type="date"
+            value={formData.fdc_opg ? formData.fdc_opg.split('T')[0] : ""}
+            onChange={(e) => onChange("fdc_opg", e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="f-dcr">Nro. Decreto</Label>
+          <Input
+            id="f-dcr"
+            type="text"
+            placeholder="Ej: DEC-2024"
+            value={formData.dcr_opg || ""}
+            onChange={(e) => onChange("dcr_opg", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="f-par">Partida Presupuestaria</Label>
           <select
-            id="f-estado"
-            value={formData.sta_opg}
-            onChange={(e) => onChange("sta_opg", parseInt(e.target.value))}
+            id="f-par"
+            value={formData.par_opg}
+            onChange={(e) => onChange("par_opg", parseInt(e.target.value) || 0)}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           >
-            <option value={0}>Seleccione un estado</option>
-            {states.map((s) => (
-              <option key={s.cod_sta} value={s.cod_sta}>
-                {s.nom_sta}
+            <option value={0}>Seleccione partida</option>
+            {partidas.map((p) => (
+              <option key={p.cod_par} value={p.cod_par}>
+                {p.num_par} — {p.nom_par}
               </option>
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="f-con">Concepto</Label>
+        <textarea
+          id="f-con"
+          rows={2}
+          className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          value={formData.con_opg}
+          onChange={(e) => onChange("con_opg", e.target.value)}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="f-estado">Estado</Label>
+        <select
+          id="f-estado"
+          value={formData.sta_opg}
+          onChange={(e) => onChange("sta_opg", parseInt(e.target.value))}
+          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+        >
+          <option value={0}>Seleccione un estado</option>
+          {states.map((s) => (
+            <option key={s.cod_sta} value={s.cod_sta}>
+              {s.nom_sta}
+            </option>
+          ))}
+        </select>
       </div>
     </Modal.Body>
   );
@@ -169,6 +194,7 @@ export default function Order() {
   const { data: orders, isLoading, handleCreate: apiCreateOrder, handleUpdate: apiUpdateOrder, handleDelete: apiDeleteOrder } = useOrders();
   const { accountantData } = useAccountants();
   const { data: states } = useStateData();
+  const { departures: partidas } = useDepartures();
 
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
@@ -183,10 +209,11 @@ export default function Order() {
     if (!q) return orders;
     return orders.filter(
       (o) =>
+        o.cod_opg?.toString().includes(q) ||
         o.num_opg?.toString().includes(q) ||
         o.nom_ctd?.toLowerCase().includes(q) ||
         o.ape_ctd?.toLowerCase().includes(q) ||
-        o.dcr_opg?.toLowerCase().includes(q) ||
+        o.ced_opg?.includes(q) ||
         o.fec_opg?.includes(q)
     );
   }, [orders, search]);
@@ -206,8 +233,8 @@ export default function Order() {
 
   const openEditModal = (order: OrderItem) => {
     setSelectedOrder(order);
-    const { num_opg, ced_ctd, fec_opg, fco_opg, asp_opg, dcr_opg, fdc_opg, mon_opg, sta_opg } = order;
-    setFormData({ num_opg, ced_ctd, fec_opg, fco_opg, asp_opg, dcr_opg, fdc_opg, mon_opg, sta_opg });
+    const { num_opg, ced_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg } = order;
+    setFormData({ num_opg, ced_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg });
     setIsEditModalOpen(true);
   };
 
@@ -234,17 +261,26 @@ export default function Order() {
     }
   };
 
-  const handleFieldChange = (key: keyof OrderFormData, value: string | number) =>
+  const handleFieldChange = (key: keyof OrderFormData, value: string | number | null) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
 
   // --- Columnas ---
   const columns = [
     {
+      header: "ID",
+      key: "cod_opg",
+      render: (item: OrderItem) => (
+        <span className="text-gray-600 dark:text-gray-400 text-theme-sm">
+          #{item.cod_opg}
+        </span>
+      ),
+    },
+    {
       header: "Nro. Orden",
       key: "num_opg",
       render: (item: OrderItem) => (
         <span className="font-medium text-gray-800 dark:text-white/90">
-          #{item.num_opg}
+          {item.num_opg}
         </span>
       ),
     },
@@ -252,53 +288,22 @@ export default function Order() {
       header: "Cuentadante",
       key: "cuentadante",
       render: (item: OrderItem) => (
-        <span className="text-gray-600 dark:text-gray-400 text-theme-sm">
-          {item.nom_ctd} {item.ape_ctd}
-        </span>
+        <div className="flex flex-col">
+          <span className="text-gray-800 dark:text-white/90 font-medium text-theme-sm">
+            {item.nom_ctd} {item.ape_ctd}
+          </span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs">
+            V-{item.ced_opg}
+          </span>
+        </div>
       ),
     },
     {
-      header: "F. Orden",
+      header: "F. Emisión",
       key: "fec_opg",
       render: (item: OrderItem) => (
         <span className="text-gray-600 dark:text-gray-400 text-theme-sm whitespace-nowrap">
           {item.fec_opg ? item.fec_opg.split('T')[0] : "N/A"}
-        </span>
-      ),
-    },
-    {
-      header: "F. Control",
-      key: "fco_opg",
-      render: (item: OrderItem) => (
-        <span className="text-gray-600 dark:text-gray-400 text-theme-sm whitespace-nowrap">
-          {item.fco_opg ? item.fco_opg.split('T')[0] : "N/A"}
-        </span>
-      ),
-    },
-    {
-      header: "Aspecto",
-      key: "asp_opg",
-      render: (item: OrderItem) => (
-        <span className="text-gray-600 dark:text-gray-400 text-theme-sm">
-          {item.asp_opg}
-        </span>
-      ),
-    },
-    {
-      header: "N. Retencion",
-      key: "dcr_opg",
-      render: (item: OrderItem) => (
-        <span className="text-gray-600 dark:text-gray-400 text-theme-sm max-w-[200px] truncate block" title={item.dcr_opg}>
-          {item.dcr_opg}
-        </span>
-      ),
-    },
-    {
-      header: "F. Cobro",
-      key: "fdc_opg",
-      render: (item: OrderItem) => (
-        <span className="text-gray-600 dark:text-gray-400 text-theme-sm whitespace-nowrap">
-          {item.fdc_opg ? item.fdc_opg.split('T')[0] : "N/A"}
         </span>
       ),
     },
@@ -388,7 +393,7 @@ export default function Order() {
             </div>
           ) : filteredData.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              No se encontraron órdenes que coincidan con &quot;{search}&quot;.
+              No se encontraron órdenes que coincidan con "{search}".
             </p>
           ) : (
             <DataTable columns={columns} data={filteredData} />
@@ -404,6 +409,7 @@ export default function Order() {
           onChange={handleFieldChange}
           cuentadantes={accountantData || []}
           states={states || []}
+          partidas={partidas || []}
         />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
@@ -423,6 +429,7 @@ export default function Order() {
           onChange={handleFieldChange}
           cuentadantes={accountantData || []}
           states={states || []}
+          partidas={partidas || []}
         />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>

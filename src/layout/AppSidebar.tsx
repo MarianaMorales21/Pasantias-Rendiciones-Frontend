@@ -27,8 +27,8 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Estadisticas", path: "/", pro: false }],
+    name: "Estadisticas",
+    path: "/",
   },
   {
     icon: <GroupIcon />,
@@ -41,9 +41,14 @@ const navItems: NavItem[] = [
     path: "/beneficiary",
   },
   {
-    name: "Ordenes de Pago",
-    icon: <ClipboardIcon />,
-    path: "/order",
+    name: "Autoridades",
+    icon: <DocsIcon />,
+    path: "/authorities"
+  },
+  {
+    icon: <ShieldIcon />,
+    name: "Cuentadante",
+    path: "/accountant",
   },
   {
     icon: <BriefcaseIcon />,
@@ -51,9 +56,9 @@ const navItems: NavItem[] = [
     path: "/programs",
   },
   {
-    icon: <ShieldIcon />,
-    name: "Cuentadante",
-    path: "/accountant",
+    name: "Ordenes de Pago",
+    icon: <ClipboardIcon />,
+    path: "/order",
   },
   {
     name: "Rendiciones",
@@ -70,8 +75,7 @@ const navItems: NavItem[] = [
     icon: <BoltIcon />,
     subItems: [
       { name: "Perfil", path: "/profile", pro: false },
-      { name: "Registro", path: "/login", pro: false },
-      { name: "Cerrar Sesion", path: "/login", pro: false }
+      { name: "Cerrar Sesión", path: "/login", pro: false }
     ],
   },
 ];

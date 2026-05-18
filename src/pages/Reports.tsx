@@ -1,196 +1,256 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useReports } from "../hooks/useReports";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import ComponentCard from "../components/common/ComponentCard";
 import PageMeta from "../components/common/PageMeta";
+import ComponentCard from "../components/common/ComponentCard";
 import Button from "../components/ui/button/Button";
-import Label from "../components/form/Label";
+import { useAuthorities } from "../hooks/useAuthorities";
 import {
-  PencilIcon,
+  FileIcon,
   DownloadIcon,
   ListIcon,
   ClipboardIcon,
-  FileIcon,
+  FileIcon as FormIcon,
 } from "../icons";
 
-// ─── Tipos ──────────────────────────────────────────────────────────────────
-type ReportType = "constancia" | "detalles";
+// Importación de componentes de reportes organizados
+import { DetailedReportPreview } from "../components/reports/DetailedReport";
+import { ActaPreview } from "../components/reports/ActaEntrega";
+import { SolicitudFormaPreview } from "../components/reports/SolicitudForma";
+import { SolicitudCartaPreview } from "../components/reports/SolicitudCarta";
+import { ActaSummary } from "../types/reports";
 
-// ─── Componente Vista Previa (Simulada) ──────────────────────────────────────
-function ReportPreview({ type }: { type: ReportType }) {
+// Importación centralizada de generadores PDF
+import {
+  exportDetailedPDF,
+  exportActaPDF,
+  exportSolicitudFormaPDF,
+  exportSolicitudCartaPDF
+} from "../utils/pdfGenerators";
+
+// ─── COMPONENTE AUXILIAR: VISTA PREVIA VACÍA ──────────────────────────────────
+
+function EmptyPreview({ message }: { message: string }) {
   return (
-    <div className="bg-gray-100 dark:bg-gray-800/50 p-6 rounded-xl flex items-center justify-center min-h-[600px] border border-gray-200 dark:border-gray-700 shadow-inner">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-[500px] aspect-[1/1.41] shadow-2xl p-8 flex flex-col gap-6 relative overflow-hidden">
-        {/* Marca de agua o decorativo */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 dark:bg-blue-900/10 rounded-full -mr-16 -mt-16"></div>
+    <div className="flex flex-col items-center justify-center py-24 text-gray-400 dark:text-gray-500">
+      <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-full mb-4 border border-gray-200 dark:border-gray-700">
+        <FileIcon className="size-16 opacity-20" />
+      </div>
+      <p className="text-base font-medium italic">{message}</p>
+    </div>
+  );
+}
 
-        {/* Encabezado del Reporte */}
-        <div className="flex justify-between items-start border-b pb-4 border-gray-100 dark:border-gray-800">
-          <div className="flex items-center">
-            <img
-              src="/images/logo/fundes.png"
-              alt="FUNDES"
-              className="h-10 w-auto object-contain"
-            />
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] text-gray-400">Fecha de Impresión</p>
-            <p className="text-[12px] font-medium text-gray-700 dark:text-gray-300">{new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
+// ─── COMPONENTE AUXILIAR: CARGANDO ────────────────────────────────────────────
 
-        {/* Título del Reporte */}
-        <div className="text-center py-4">
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white underline decoration-blue-500 underline-offset-4">
-            {type === "constancia" ? "CONSTANCIA DE RECEPCIÓN DE RENDICIÓN" : "DETALLES DE RENDICION"}
-          </h1>
-        </div>
+function LoadingPreview() {
+  return (
+    <div className="flex flex-col items-center justify-center py-24">
+      <div className="size-12 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin mb-4" />
+      <p className="text-base font-bold text-gray-600 dark:text-gray-300 animate-pulse">Generando vista previa...</p>
+    </div>
+  );
+}
 
-        {/* Cuerpo del Reporte (MOCK) */}
-        <div className="space-y-4 flex-1">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="h-4 bg-gray-50 dark:bg-gray-800 rounded w-full"></div>
-            <div className="h-4 bg-gray-50 dark:bg-gray-800 rounded w-1/2"></div>
-          </div>
-          <div className="h-32 bg-gray-50 dark:bg-gray-800 rounded w-full border border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center">
-            <p className="text-[10px] text-gray-400 italic">Previsualización de datos dinámicos...</p>
-          </div>
-          <div className="space-y-2">
-            <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-full"></div>
-            <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-full"></div>
-            <div className="h-3 bg-gray-50 dark:bg-gray-800 rounded w-3/4"></div>
-          </div>
-        </div>
+// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
-        {/* Firmas Footer */}
-        <div className="grid grid-cols-2 gap-12 pt-8 border-t border-gray-100 dark:border-gray-800 mt-auto">
-          <div className="text-center">
-            <div className="border-t border-gray-300 pt-1">
-              <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">RECIBIDO POR</p>
+type TabType = "detalle" | "acta" | "solicitud_forma" | "solicitud_carta";
+
+export default function Reports() {
+  const [activeTab, setActiveTab] = useState<TabType>("detalle");
+  const previewRef = useRef<HTMLDivElement>(null);
+  const {
+    renditionList,
+    selectedRnd,
+    handleSelectRnd,
+    detailedReport,
+    loading,
+    fetchDetailedReport,
+  } = useReports();
+
+  const { authorities } = useAuthorities();
+
+  const currentRndInfo = useMemo(() => {
+    return renditionList.find(r => r.cod_rnd === selectedRnd);
+  }, [renditionList, selectedRnd]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rndId = params.get("rnd");
+    if (rndId) {
+      handleSelectRnd(Number(rndId));
+      fetchDetailedReport(Number(rndId));
+    }
+  }, [handleSelectRnd, fetchDetailedReport]);
+
+  const handleExportPDF = async () => {
+    if (!detailedReport) return;
+    if (activeTab === "detalle") await exportDetailedPDF(detailedReport, authorities);
+    else if (activeTab === "acta") await exportActaPDF(detailedReport, authorities);
+    else if (activeTab === "solicitud_forma") await exportSolicitudFormaPDF(detailedReport, authorities);
+    else if (activeTab === "solicitud_carta") await exportSolicitudCartaPDF(detailedReport, authorities);
+  };
+
+  const handleGenerate = () => {
+    if (selectedRnd) fetchDetailedReport(selectedRnd);
+  };
+
+  // Calculamos las estadísticas en tiempo real basándonos en el selector
+  const summary = useMemo<ActaSummary | undefined>(() => {
+    return detailedReport?.summary as unknown as ActaSummary;
+  }, [detailedReport]);
+
+  // 2. Lógica de visualización (Stats)
+  const displayStats = useMemo(() => {
+    // Si el reporte ya existe y tiene el summary inyectado
+    if (summary) {
+      return {
+        porcentaje: summary.porcentajeRendido ?? 0,
+        porRendir: summary.montoPorRendirFmt ?? "0,00",
+      };
+    }
+
+
+    return { porcentaje: 0, porRendir: "0,00" };
+  }, [summary]);
+
+  return (
+    <div className="min-h-screen pb-12 bg-gray-50/30 dark:bg-gray-950/20">
+      <PageMeta title="Reportes | Rendiciones" description="Generación de reportes" />
+      <PageBreadcrumb pageTitle="Generación de Reportes e Instrumentos" />
+
+      {/* SECCIÓN DE CONFIGURACIÓN SUPERIOR */}
+      <div className="mb-8">
+        <ComponentCard title="Configuración y Estadísticas de la Rendición">
+          <div className="flex flex-col lg:flex-row items-end gap-5">
+
+            {/* SELECTOR */}
+            <div className="w-full lg:w-80">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] mb-2 ml-1">Seleccionar Rendición</label>
+              <select
+                value={selectedRnd || ""}
+                onChange={(e) => handleSelectRnd(Number(e.target.value))}
+                className="w-full h-12 rounded-xl border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+              >
+                <option value="">Seleccione una...</option>
+                {renditionList.map((rnd) => (
+                  <option key={rnd.cod_rnd} value={rnd.cod_rnd}>RND 0{rnd.num_rnd} — OPG {rnd.num_opg}</option>
+                ))}
+              </select>
             </div>
+
+            {/* CUADROS INFORMATIVOS - MÁS AZULADOS Y GRANDES */}
+            <div className="flex-1 grid grid-cols-4 gap-4 w-full h-12">
+              {/* CUADROS INFORMATIVOS */}
+
+
+              {/* ORDEN DE PAGO */}
+              <div className="bg-blue-100/40 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-xl flex flex-col items-center justify-center transition-colors p-2">
+                <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase leading-none mb-1">ORDEN DE PAGO</span>
+                <span className="text-sm font-black text-gray-900 dark:text-white leading-none">{currentRndInfo?.num_opg || "---"}</span>
+              </div>
+
+              {/* RENDICIÓN Nº */}
+              <div className="bg-blue-100/40 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-xl flex flex-col items-center justify-center transition-colors p-2">
+                <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase leading-none mb-1">RENDICIÓN Nº</span>
+                <span className="text-sm font-black text-gray-900 dark:text-white leading-none">{currentRndInfo ? `0${currentRndInfo.num_rnd}` : "---"}</span>
+              </div>
+
+              {/* % RENDIDO */}
+              {/* % RENDIDO */}
+              <div className="bg-blue-100/40 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-xl flex flex-col items-center justify-center transition-colors p-2">
+                <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase leading-none mb-1">% RENDIDO</span>
+                <span className="text-[11px] font-black text-gray-900 dark:text-white leading-none">
+                  {displayStats.porcentaje}%
+                </span>
+              </div>
+
+              {/* POR RENDIR EN DINERO */}
+              <div className="bg-emerald-100/40 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/50 rounded-xl flex flex-col items-center justify-center transition-colors p-2">
+                <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase leading-none mb-1">POR RENDIR (BS.)</span>
+                <span className="text-[11px] font-black text-gray-900 dark:text-white leading-none">
+                  {displayStats.porRendir}
+                </span>
+              </div>
+            </div>
+
+            {/* BOTONES DE ACCIÓN */}
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <Button
+                onClick={handleGenerate}
+                disabled={!selectedRnd || loading}
+                className="flex-1 lg:w-40 h-12 rounded-xl bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
+              >
+                GENERAR
+              </Button>
+
+              <button
+                onClick={handleExportPDF}
+                disabled={!detailedReport || loading}
+                className={`flex items-center justify-center gap-2 px-6 h-12 rounded-xl font-black text-[11px] tracking-tight transition-all duration-300 active:scale-95 shadow-lg shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40 ${!detailedReport || loading
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 cursor-not-allowed shadow-none"
+                  : "bg-red-600 hover:bg-red-700 text-white shadow-red-900/20"
+                  }`}
+              >
+                <DownloadIcon className="size-5" />
+                <span className="hidden sm:inline">EXPORTAR PDF</span>
+              </button>
+            </div>
+
           </div>
-          <div className="text-center">
-            <div className="border-t border-gray-300 pt-1">
-              <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase">AUTORIZADO</p>
+        </ComponentCard>
+      </div>
+
+      {/* SECCIÓN DE TABS ESTILO CARPETA */}
+      <div className="max-w-[98%] mx-auto">
+        <div className="flex items-end pl-2 space-x-1.5 overflow-x-auto no-scrollbar">
+          {[
+            { id: "detalle", label: "DETALLE DE GASTOS", icon: ListIcon },
+            { id: "acta", label: "ACTA DE ENTREGA", icon: ClipboardIcon },
+            { id: "solicitud_forma", label: "SOLICITUD (FORMATO)", icon: FormIcon },
+            { id: "solicitud_carta", label: "SOLICITUD (CARTA)", icon: FileIcon },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`relative flex items-center gap-3 px-10 py-4 text-[11px] font-black tracking-widest transition-all duration-300 ${activeTab === tab.id
+                ? "bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 rounded-t-2xl border-t-2 border-x-2 border-gray-200 dark:border-gray-700 z-10 shadow-[0_-8px_20px_-8px_rgba(0,0,0,0.12)]"
+                : "bg-gray-200/60 dark:bg-gray-800/40 text-gray-500 dark:text-gray-500 rounded-t-xl border-t border-x border-transparent mb-0 hover:bg-gray-100 dark:hover:bg-gray-800/80"
+                }`}
+            >
+              <tab.icon className={`size-4.5 ${activeTab === tab.id ? "text-blue-500" : ""}`} />
+              <span className="whitespace-nowrap">{tab.label}</span>
+              {activeTab === tab.id && (
+                <div className="absolute -bottom-1.5 left-0 right-0 h-4 bg-white dark:bg-gray-900 z-20" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* CONTENEDOR DE LA CARPETA */}
+        <div className="bg-white dark:bg-gray-900 rounded-b-[2.5rem] rounded-tr-[2.5rem] border-2 border-gray-200 dark:border-gray-700 shadow-2xl shadow-gray-200/50 dark:shadow-none overflow-hidden">
+          <div className="p-1 md:p-8 bg-gray-50/50 dark:bg-gray-950/20">
+            <div
+              ref={previewRef}
+              className="overflow-auto min-h-[800px] max-h-[1200px] bg-white dark:bg-gray-900 rounded-[2rem] shadow-inner border border-gray-200/50 dark:border-gray-800 p-2 md:p-12"
+            >
+              {loading ? (
+                <LoadingPreview />
+              ) : activeTab === "detalle" ? (
+                detailedReport ? <DetailedReportPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+              ) : activeTab === "acta" ? (
+                detailedReport ? <ActaPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+              ) : activeTab === "solicitud_forma" ? (
+                detailedReport ? <SolicitudFormaPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+              ) : detailedReport ? (
+                <SolicitudCartaPreview data={detailedReport} authorities={authorities} />
+              ) : (
+                <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+              )}
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-// ─── Página Principal ────────────────────────────────────────────────────────
-export default function Reports() {
-  const [activeTab, setActiveTab] = useState<ReportType>("constancia");
-
-  return (
-    <>
-      <PageMeta
-        title="FUNDES - Rendiciones | Reportes"
-        description="Generación y visualización de reportes financieros"
-      />
-
-      <PageBreadcrumb pageTitle="Central de Reportes" />
-
-      {/* Selector de Pestañas Estilo Moderno */}
-      <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl mb-6 w-fit h-12 items-center">
-        <button
-          onClick={() => setActiveTab("constancia")}
-          className={`flex items-center gap-2 px-6 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${activeTab === "constancia"
-            ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
-            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-        >
-          <ClipboardIcon className="size-4" />
-          Constancia de Rendición
-        </button>
-        <button
-          onClick={() => setActiveTab("detalles")}
-          className={`flex items-center gap-2 px-6 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${activeTab === "detalles"
-            ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
-            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-        >
-          <ListIcon className="size-4" />
-          Detalles Completos
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        {/* PANEL DE OPCIONES (ZONA DERECHA/LATERAL EN DESKTOP) */}
-        <div className="lg:col-span-4 space-y-6 order-2 lg:order-2">
-          <ComponentCard title="Opciones de Reporte">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="rep-prog">Programa</Label>
-                <select className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                  <option value="">Todos los Programas</option>
-                  <option value="1">Programa Alimentario</option>
-                  <option value="2">Apoyo Educativo</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="rep-f-ini">Fecha Inicio</Label>
-                  <input type="date" className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
-                </div>
-                <div>
-                  <Label htmlFor="rep-f-fin">Fecha Fin</Label>
-                  <input type="date" className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="rep-ben">Beneficiario (RIF)</Label>
-                <select className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                  <option value="">Todos los Beneficiarios</option>
-                  <option value="v1">V-12.345.678 - María González</option>
-                  <option value="v2">V-9.876.543 - José Ramírez</option>
-                </select>
-              </div>
-
-              <div className="pt-4 space-y-3">
-                <Button className="w-full flex justify-center gap-2 items-center bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl py-3 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40">
-                  <FileIcon className="size-4" />
-                  Aplicar Filtros
-                </Button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="flex justify-center gap-2 items-center rounded-xl border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800">
-                    <DownloadIcon className="size-4" />
-                    PDF
-                  </Button>
-                  <Button variant="outline" className="flex justify-center gap-2 items-center rounded-xl border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800">
-                    <PencilIcon className="size-4" />
-                    Imprimir
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </ComponentCard>
-
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 p-4 rounded-xl">
-            <div className="flex gap-3">
-              <div className="h-10 w-10 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300 shrink-0">
-                <ClipboardIcon className="size-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Ayuda</h4>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Los reportes se generan basándose en las rendiciones cargadas en el sistema. Puedes filtrar por fecha para obtener periodos específicos.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* PANEL DE PREVISUALIZACIÓN (ZONA IZQUIERDA EN DESKTOP) */}
-        <div className="lg:col-span-8 order-1 lg:order-1">
-          <ComponentCard title="Vista Previa de Documento">
-            <ReportPreview type={activeTab} />
-          </ComponentCard>
-        </div>
-      </div>
-    </>
   );
 }

@@ -1,0 +1,27 @@
+import { helpHttp, ApiResponse } from "../helpers/helpHttp";
+import { API_BASE_URL } from "../api/apiConfig";
+import {
+  FullDetailedReport,
+  FullActaReport,
+  RenditionListItem,
+} from "../types/reports";
+
+const api = helpHttp();
+const url = `${API_BASE_URL}/reports`;
+
+export const reportService = {
+  // Lista de rendiciones activas para el selector
+  getRenditionList: (): Promise<ApiResponse<{ ok: boolean; data: RenditionListItem[] }>> => {
+    return api.get(`${url}/renditions`) as Promise<ApiResponse<{ ok: boolean; data: RenditionListItem[] }>>;
+  },
+
+  // Reporte detallado (tabla de gastos agrupada por programa)
+  getDetailedReport: (cod_rnd: number | string): Promise<ApiResponse<FullDetailedReport>> => {
+    return api.get(`${url}/detailed/${cod_rnd}`) as Promise<ApiResponse<FullDetailedReport>>;
+  },
+
+  // Acta de entrega (carta formal)
+  getActaReport: (cod_rnd: number | string): Promise<ApiResponse<FullActaReport>> => {
+    return api.get(`${url}/acta/${cod_rnd}`) as Promise<ApiResponse<FullActaReport>>;
+  },
+};

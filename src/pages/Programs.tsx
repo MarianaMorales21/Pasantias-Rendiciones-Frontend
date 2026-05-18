@@ -64,7 +64,7 @@ function ProgramForm({ formData, onChange }: ProgramFormProps) {
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function Programs() {
   const {
-    loading,
+    isLoading,
     error,
     search,
     setSearch,
@@ -80,7 +80,7 @@ export default function Programs() {
     openCreateModal,
     handleCreate,
     openEditModal,
-    handleSaveEdit,
+    handleUpdate,
     openDeleteModal,
     handleDelete,
     handleFieldChange,
@@ -183,7 +183,7 @@ export default function Programs() {
             </div>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="py-12 text-center text-sm text-gray-500">Cargando programas...</div>
           ) : error ? (
             <div className="py-12 text-center text-sm text-red-500">Error: {error}</div>
@@ -217,7 +217,7 @@ export default function Programs() {
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSaveEdit}>Guardar Cambios</Button>
+          <Button onClick={handleUpdate}>Guardar Cambios</Button>
         </Modal.Footer>
       </Modal>
 

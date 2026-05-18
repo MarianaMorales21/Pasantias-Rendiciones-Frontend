@@ -8,6 +8,8 @@ interface AuthContextType {
   loading: boolean;
   authenticated: boolean;
   login: (ced_usu: string, cla_usu: string) => Promise<void>;
+  register: (data: Partial<UserItem>) => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   verifySession: () => Promise<void>;
 }
@@ -53,7 +55,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Establecer el usuario y marcar como autenticado inmediatamente
     setUser(response);
     setAuthenticated(true);
-    setLoading(false); // Asegurarnos de que no se quede cargando
+    setLoading(false); 
+  };
+
+  const register = async (data: Partial<UserItem>) => {
+    const response = await api.post(`${API_BASE_URL}/auth/register`, {
+      body: data,
+    }) as ApiResponse<UserItem>;
+
+    if (isApiError(response)) {
+      throw new Error(response.statusText || "Error al registrar usuario");
+    }
+  };
+
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    const response = await api.post(`${API_BASE_URL}/auth/change-password`, {
+      body: { oldPassword, newPassword },
+    }) as ApiResponse<{ message: string }>;
+
+    if (isApiError(response)) {
+      throw new Error(response.statusText || "Error al cambiar la contraseña");
+    }
+
+    // Cerrar sesión después de cambiar contraseña
+    await logout();
   };
 
   const logout = async () => {
@@ -75,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, authenticated, login, logout, verifySession }}>
+    <AuthContext.Provider value={{ user, loading, authenticated, login, register, changePassword, logout, verifySession }}>
       {children}
     </AuthContext.Provider>
   );

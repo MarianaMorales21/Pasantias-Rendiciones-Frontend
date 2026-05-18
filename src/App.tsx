@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
+import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
 import Profile from "./pages/Profile";
 import AppLayout from "./layout/AppLayout";
@@ -12,6 +13,7 @@ import Beneficiary from "./pages/Beneficiary";
 import Order from "./pages/Order";
 import Reports from "./pages/Reports";
 import Surrender from "./pages/Surrender";
+import Authorities from "./pages/Authorities";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
@@ -37,12 +39,14 @@ export default function App() {
               <Route path="/order" element={<Order />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/surrender" element={<Surrender />} />
+              <Route path="/authorities" element={<Authorities />} />
             </Route>
           </Route>
 
           {/* Auth Layout - Public Only */}
           <Route element={<PublicRoute />}>
             <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
           </Route>
 
           {/* Fallback Route */}
