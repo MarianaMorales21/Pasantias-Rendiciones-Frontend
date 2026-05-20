@@ -29,6 +29,7 @@ export interface ReportHeader {
   prd_rnd: string;
   avs_rnd: string;
   arn_rnd: string;
+  rnt_rnd?: number;  // Reintegro
   cod_opg: number;
   num_opg: number;
   fec_opg: string;
@@ -59,12 +60,14 @@ export interface ReportSummary {
   montoAsignado: number;
   montoRendidoAnterior: number;
   montoRendido: number;
+  reintegro?: number;
   montoPorRendir: number;
   porcentajeRendido: number;
   porcentajePorRendir: number;
   montoAsignadoFmt: string;
   montoRendidoAnteriorFmt: string;
   montoRendidoFmt: string;
+  reintegroFmt?: string;
   montoPorRendirFmt: string;
 }
 
@@ -140,10 +143,53 @@ export interface RenditionListItem {
   num_rnd: string;
   fec_rnd: string;
   prd_rnd: string;
+  rnt_rnd?: number; // Reintegro
   cod_opg: number;
   num_opg: number;
   mon_opg: number;
   total_rendido: number;
   porcentaje: number;
   label: string;
+}
+
+export interface RenditionHistoryItem {
+  num_rnd: number;
+  monto_rendido: number;
+  monto_asignado: number;
+}
+
+export interface OpgReportRenditionItem {
+  cod_rnd: number;
+  num_rnd: string;
+  monto_rendido: number;
+  reintegro: number;
+  porcentaje: number;
+  sobrante: number;
+}
+
+export interface FullOPGReport {
+  ok: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  history: any[];
+  renditions?: OpgReportRenditionItem[];
+  summary: {
+    monto_inicial: number;
+    total_reintegros: number;
+    bruto_ejecutado: number;
+    total_ejecutado: number;
+    saldo_disponible: number;
+    total_rendiciones: number;
+    monto_inicial_fmt: string;
+    total_ejecutado_fmt: string;
+    saldo_disponible_fmt: string;
+  };
+}
+
+export interface DashboardStatsResponse {
+  ok: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any[];
+  total_rendiciones: number;
+  total_gastos: number;
+  // ... otros campos
 }

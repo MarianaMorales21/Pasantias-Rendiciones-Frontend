@@ -13,6 +13,7 @@ import {
   ShieldIcon,
   BriefcaseIcon,
   ClipboardIcon,
+  UserIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
@@ -42,7 +43,7 @@ const navItems: NavItem[] = [
   },
   {
     name: "Autoridades",
-    icon: <DocsIcon />,
+    icon: <UserIcon />,
     path: "/authorities"
   },
   {

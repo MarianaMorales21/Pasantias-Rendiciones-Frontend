@@ -137,7 +137,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
       summary.montoAsignadoFmt,
       summary.montoRendidoAnteriorFmt,
       summary.montoRendidoFmt,
-      "0,00",
+      summary.reintegroFmt || "0,00",
       summary.montoPorRendirFmt,
       `${summary.porcentajePorRendir || 0}%`
     ]],
@@ -226,7 +226,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
       startY: y,
       margin,
       theme: "grid",
-      head: [["ND / OP", "FECHA", "PARTIDA", "CHEQUE / TRANSF.", "BENEFICIARIO / EMPRESA", "RIF / CI", "DIRECCIÓN", "CONCEPTO", "MONTO"]],
+      head: [["ND / OP", "FECHA", "PARTIDA", "TRANSF.", "BENEFICIARIO / EMPRESA", "RIF / CI", "DIRECCIÓN", "CONCEPTO", "MONTO"]],
       body: rows,
       headStyles: {
         fillColor: [240, 243, 250],

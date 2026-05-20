@@ -2,39 +2,37 @@ import { useState } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 
-// --- 1. TIPOS DE DATOS (TypeScript) ---
-interface RendicionData {
-  codigo: string;
-  montoAsignado: number;
-  montoRendido: number;
-  estatus: "Activo" | "En Revisión" | "Cerrado" | "Por Completar";
-  periodo: string;
+interface MonthlyTargetProps {
+  summary?: {
+    monto_inicial_fmt: string;
+    total_ejecutado_fmt: string;
+    saldo_disponible_fmt: string;
+    monto_inicial: number;
+    total_ejecutado: number;
+    saldo_disponible: number;
+  };
 }
 
-// --- 2. OBJETO DE DATOS (Simulando una respuesta de API) ---
-const rendicionActual: RendicionData = {
-  codigo: "REND-2026-Q1",
-  periodo: "Enero - Marzo 2026",
-  montoAsignado: 5000,
-  montoRendido: 3422.50,
-  estatus: "En Revisión",
-};
-
-// --- 3. COMPONENTE PRINCIPAL ---
-export default function RendicionTargetCard() {
+export default function RendicionTargetCard({ summary }: MonthlyTargetProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Valores predeterminados si no hay resumen
+  const montoAsignado = summary?.monto_inicial || 0;
+  const montoRendido = summary?.total_ejecutado || 0;
+  const montoPendiente = summary?.saldo_disponible || 0;
+
   // Lógica de Cálculos
-  const porcentajeRendido = parseFloat(
-    ((rendicionActual.montoRendido / rendicionActual.montoAsignado) * 100).toFixed(2)
-  );
-  const montoPendiente = rendicionActual.montoAsignado - rendicionActual.montoRendido;
+  const porcentajeRendido = montoAsignado > 0 
+    ? parseFloat(((montoRendido / montoAsignado) * 100).toFixed(2))
+    : 0;
+  
+  const estatus = porcentajeRendido >= 100 ? "Cerrado" : (porcentajeRendido > 0 ? "En Progreso" : "Por Completar");
 
   // Formateador de Moneda
   const fCurrency = (val: number) =>
-    new Intl.NumberFormat("en-US", {
+    new Intl.NumberFormat("es-VE", {
       style: "currency",
-      currency: "USD",
+      currency: "VES",
     }).format(val);
 
   // Configuración del Gráfico ApexCharts
@@ -94,10 +92,10 @@ export default function RendicionTargetCard() {
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-xl font-bold text-gray-800 dark:text-white/90">
-              Progreso Trimestral
+              Progreso de Ejecución
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {rendicionActual.codigo} • {rendicionActual.periodo}
+              Orden de Pago Seleccionada
             </p>
           </div>
           <div className="relative">
@@ -112,8 +110,7 @@ export default function RendicionTargetCard() {
 
             {isOpen && (
               <div className="absolute right-0 mt-2 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-800 z-10">
-                <button className="flex w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5 rounded-lg">Ver Facturas</button>
-                <button className="flex w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">Reportar Error</button>
+                <button className="flex w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5 rounded-lg">Ver Detalles</button>
               </div>
             )}
           </div>
@@ -129,28 +126,28 @@ export default function RendicionTargetCard() {
             width="100%"
           />
           <div className="absolute bottom-6">
-            <span className={`rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wider ${rendicionActual.estatus === "Cerrado"
+            <span className={`rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wider ${estatus === "Cerrado"
                 ? "bg-green-100 text-green-600"
                 : "bg-amber-100 text-amber-600"
               }`}>
-              {rendicionActual.estatus}
+              {estatus}
             </span>
           </div>
         </div>
 
         {/* Description */}
         <p className="mt-4 text-center text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-          Has justificado el <span className="font-bold text-gray-800 dark:text-white">{porcentajeRendido}%</span> de los fondos recibidos. Quedan {fCurrency(montoPendiente)} por rendir.
+          Se ha justificado el <span className="font-bold text-gray-800 dark:text-white">{porcentajeRendido}%</span> de los fondos recibidos. Quedan {fCurrency(montoPendiente)} por rendir.
         </p>
       </div>
 
       {/* Footer Stats */}
       <div className="flex items-center justify-around py-5 px-2">
-        <StatGroup label="Asignado" value={fCurrency(rendicionActual.montoAsignado)} />
+        <StatGroup label="Asignado" value={fCurrency(montoAsignado)} />
         <div className="h-8 w-px bg-gray-200 dark:bg-gray-800" />
         <StatGroup
           label="Rendido"
-          value={fCurrency(rendicionActual.montoRendido)}
+          value={fCurrency(montoRendido)}
           valueClass="text-green-600 dark:text-green-400"
         />
         <div className="h-8 w-px bg-gray-200 dark:bg-gray-800" />

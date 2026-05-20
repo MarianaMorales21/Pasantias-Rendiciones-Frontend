@@ -8,42 +8,62 @@ import {
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
 
-export default function Metrics() {
+interface MetricsProps {
+  summary?: {
+    monto_inicial_fmt: string;
+    total_ejecutado_fmt: string;
+    saldo_disponible_fmt: string;
+    monto_inicial: number;
+    total_ejecutado: number;
+    saldo_disponible: number;
+    total_rendiciones: number;
+  };
+}
+
+export default function Metrics({ summary }: MetricsProps) {
+  const formatValue = (val?: string) => (val ? `Bs. ${val}` : "Bs. 0.00");
+  const calculatePercentage = (part: number, total: number) => {
+    if (!total || total === 0) return "0.0%";
+    return ((part / total) * 100).toFixed(1) + "%";
+  };
+
+  const executedPct = summary ? calculatePercentage(summary.total_ejecutado, summary.monto_inicial) : "0.0%";
+  const availablePct = summary ? calculatePercentage(summary.saldo_disponible, summary.monto_inicial) : "0.0%";
+  const totalRendicionesStr = summary && summary.total_rendiciones !== undefined 
+    ? summary.total_rendiciones.toString() 
+    : "0";
+
   const metricsData = [
     {
       title: "Presupuesto Total",
-      value: "$25,000.00",
+      value: formatValue(summary?.monto_inicial_fmt),
       icon: <BoxIconLine className="text-gray-800 size-6 dark:text-white/90" />,
-      change: "Anual 2026",
+      change: "Asignado",
       changeType: "neutral",
-      // Azul sólido en light, azul oscuro/opaco en dark
       borderColor: "border-l-blue-600 dark:dark:border-l-blue-700/90",
     },
     {
       title: "Total Rendido",
-      value: "$15,850.25",
+      value: formatValue(summary?.total_ejecutado_fmt),
       icon: <DollarLineIcon className="text-gray-800 size-6 dark:text-white/90" />,
-      change: "63.4%",
+      change: executedPct,
       changeType: "success",
-      // Cian vibrante en light, cian petróleo opaco en dark
       borderColor: "border-l-cyan-400 dark:dark:border-l-cyan-700/80",
     },
     {
       title: "Sobrante",
-      value: "$9,149.75",
+      value: formatValue(summary?.saldo_disponible_fmt),
       icon: <GroupIcon className="text-gray-800 size-6 dark:text-white/90" />,
-      change: "Disponible",
+      change: availablePct,
       changeType: "success",
-      // Teal en light, verde bosque muy oscuro en dark
       borderColor: "border-l-teal-500 dark:border-l-teal-700/80",
     },
     {
-      title: "Rendiciones Pendientes",
-      value: "12",
+      title: "Rendiciones",
+      value: totalRendicionesStr,
       icon: <ClipboardIcon className="text-gray-800 size-6 dark:text-white/90" />,
-      change: "Importante",
-      changeType: "error",
-      // Rojo alerta en light, rojo vino profundo en dark
+      change: totalRendicionesStr === "1" ? "Realizada" : "Realizadas",
+      changeType: "neutral",
       borderColor: "border-l-red-500 dark:border-l-red-700/90",
     },
   ];
@@ -77,7 +97,7 @@ export default function Metrics() {
               <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 {metric.title}
               </span>
-              <h4 className="mt-2 text-2xl font-bold text-gray-800 dark:text-white/90">
+              <h4 className="mt-2 text-2xl font-bold text-gray-800 dark:text-white/90 truncate max-w-[150px]">
                 {metric.value}
               </h4>
             </div>

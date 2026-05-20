@@ -9,7 +9,13 @@ export interface DebitNoteItem {
     ban_ndb: string;
     ref_ndb: string;
     pro_ndb: number;
+    rtc_ndb?: number;
+    tbf_ndb?: number;
+    isl_ndb?: number;
+    sub_ndb?: number;
+    has_retention?: boolean; // UI specific flag
     // Campos joined
     nom_ben?: string;
     num_rnd?: string;
+    total_details?: number; // Suma de mon_drn de los detalles de esta nota
 }

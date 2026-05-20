@@ -6,9 +6,11 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import { useAuth } from "../../context/AuthContext";
 import { EyeIcon, EyeCloseIcon } from "../../icons";
+import { userService } from "../../services/userService";
+import { isApiError } from "../../helpers/helpHttp";
 
 export default function ProfileCard() {
-  const { user, changePassword } = useAuth();
+  const { user, changePassword, verifySession } = useAuth();
   const { isOpen, openModal, closeModal } = useModal();
   const { isOpen: isPassOpen, openModal: openPassModal, closeModal: closePassModal } = useModal();
 
@@ -42,8 +44,28 @@ export default function ProfileCard() {
     }
   }, [user]);
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleProfileUpdate = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const res = await userService.update(user.ced_usu, {
+        ema_usu: formData.email,
+      });
+      if (isApiError(res)) {
+        throw new Error(res.statusText || "Error al actualizar perfil");
+      }
+      alert("Perfil actualizado correctamente");
+      closeModal();
+      await verifySession();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErrorMsg("");
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -71,91 +93,99 @@ export default function ProfileCard() {
 
   return (
     <>
-      <div className="p-6 md:p-8 border border-gray-200 rounded-[2.5rem] bg-white dark:border-gray-800 dark:bg-white/[0.03] shadow-xl shadow-gray-100 dark:shadow-none">
-        {/* Header Section */}
-        <div className="flex flex-col items-center gap-8 mb-10 lg:flex-row lg:items-center">
-          <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-black text-5xl border-8 border-blue-50 dark:border-gray-800 shadow-2xl">
-            {user.nom_usu?.charAt(0).toUpperCase()}
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] shadow-xl shadow-gray-100 dark:shadow-none overflow-hidden">
+        {/* Card Header */}
+        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-gray-900/50">
+          <h3 className="text-base font-black text-gray-800 dark:text-white">Perfil de Usuario</h3>
+          <p className="text-xs font-medium text-gray-500 mt-1">Gestión de datos de cuenta y credenciales</p>
+        </div>
+
+        {/* Card Body */}
+        <div className="p-6 sm:p-8 space-y-8">
+          <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center">
+            <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full bg-blue-800 text-white font-black text-5xl border-8 border-blue-50 dark:border-gray-800 shadow-2xl">
+              {user.nom_usu?.charAt(0).toUpperCase()}
+            </div>
+
+            <div className="flex-1 text-center lg:text-left space-y-2">
+              <h4 className="text-3xl font-black text-gray-800 dark:text-white/90 tracking-tight">
+                {user.nom_usu}
+              </h4>
+              <div className="flex flex-col items-center gap-2 lg:flex-row lg:gap-4 lg:justify-start">
+                <span className="px-4 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-black rounded-full uppercase tracking-widest border border-blue-100/50">
+                  {user.rol_nom || "USUARIO"}
+                </span>
+                <div className="hidden h-4 w-px bg-gray-300 dark:bg-gray-700 lg:block"></div>
+                <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                  {user.ema_usu}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 lg:mt-0">
+              <Button
+                onClick={openPassModal}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl px-5 py-2.5 shadow-lg shadow-amber-500/20 transition-all duration-300 hover:-translate-y-0.5"
+              >
+                Cambiar Clave
+              </Button>
+              <Button
+                onClick={openModal}
+                className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-5 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 hover:-translate-y-0.5"
+              >
+                Editar Datos
+              </Button>
+            </div>
           </div>
 
-          <div className="flex-1 text-center lg:text-left space-y-2">
-            <h4 className="text-3xl font-black text-gray-800 dark:text-white/90 tracking-tight">
-              {user.nom_usu}
-            </h4>
-            <div className="flex flex-col items-center gap-2 lg:flex-row lg:gap-4 lg:justify-start">
-              <span className="px-4 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-black rounded-full uppercase tracking-widest">
-                {user.rol_nom || "USUARIO"}
-              </span>
-              <div className="hidden h-4 w-px bg-gray-300 dark:bg-gray-700 lg:block"></div>
-              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
+          <div className="h-px bg-gray-100 dark:bg-gray-850" />
+
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                Cédula de Identidad
+              </p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white/90">
+                {user.ced_usu}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                Nombre de Usuario
+              </p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white/90 uppercase">
+                {user.nom_usu}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                Estado de Cuenta
+              </p>
+              <div className="flex items-center gap-2">
+                <div className={`h-2.5 w-2.5 rounded-full ${user.sta_usu === 1 ? "bg-emerald-500" : "bg-red-500"}`}></div>
+                <p className="text-lg font-bold text-gray-800 dark:text-white/90">
+                  {user.sta_usu === 1 ? "Activo" : "Inactivo"}
+                </p>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 lg:col-span-3 space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                Correo Institucional
+              </p>
+              <p className="text-lg font-bold text-gray-800 dark:text-white/90">
                 {user.ema_usu}
               </p>
             </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 mt-6 lg:mt-0">
-            <button
-              onClick={openPassModal}
-              className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl px-6 py-4 shadow-lg shadow-amber-500/20 transition-all active:scale-95"
-            >
-              Cambiar Clave
-            </button>
-            <button
-              onClick={openModal}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl px-6 py-4 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
-            >
-              Editar Datos
-            </button>
-          </div>
-        </div>
-
-        <div className="h-px bg-gray-100 dark:bg-gray-800 mb-10" />
-
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-              Cédula de Identidad
-            </p>
-            <p className="text-lg font-bold text-gray-800 dark:text-white/90">
-              {user.ced_usu}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-              Nombre de Usuario
-            </p>
-            <p className="text-lg font-bold text-gray-800 dark:text-white/90 uppercase">
-              {user.nom_usu}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-              Estado de Cuenta
-            </p>
-            <div className="flex items-center gap-2">
-              <div className={`h-2.5 w-2.5 rounded-full ${user.sta_usu === 1 ? "bg-emerald-500" : "bg-red-500"}`}></div>
-              <p className="text-lg font-bold text-gray-800 dark:text-white/90">
-                {user.sta_usu === 1 ? "Activo" : "Inactivo"}
-              </p>
-            </div>
-          </div>
-
-          <div className="md:col-span-2 lg:col-span-3 space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-              Correo Institucional
-            </p>
-            <p className="text-lg font-bold text-gray-800 dark:text-white/90">
-              {user.ema_usu}
-            </p>
-          </div>
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[600px]">
-        <div className="p-8 bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl">
-          <h3 className="text-2xl font-black text-gray-800 dark:text-white mb-6">Editar Información</h3>
+      <Modal isOpen={isOpen} onClose={closeModal}>
+        <Modal.Header>Editar Información</Modal.Header>
+        <Modal.Body>
           <div className="space-y-4">
              <div className="space-y-2">
                 <Label>Nombre Completo</Label>
@@ -166,22 +196,20 @@ export default function ProfileCard() {
                 <Label>Correo Electrónico</Label>
                 <Input value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
              </div>
-             <div className="flex justify-end gap-3 mt-8">
-               <Button variant="outline" onClick={closeModal}>Cerrar</Button>
-               <Button className="bg-blue-600">Guardar Cambios</Button>
-             </div>
           </div>
-        </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline" onClick={closeModal}>Cerrar</Button>
+          <Button className="bg-blue-800 hover:bg-blue-900 text-white font-semibold" onClick={handleProfileUpdate} disabled={loading}>
+            {loading ? "Guardando..." : "Guardar Cambios"}
+          </Button>
+        </Modal.Footer>
       </Modal>
 
-      <Modal isOpen={isPassOpen} onClose={closePassModal} className="max-w-[500px]">
-        <div className="p-8 bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl">
-          <div className="mb-6">
-            <h3 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Cambiar Contraseña</h3>
-            <p className="text-sm text-gray-500 font-medium">Al cambiar tu clave, se cerrará la sesión automáticamente.</p>
-          </div>
-          
-          <form onSubmit={handlePasswordChange} className="space-y-5">
+      <Modal isOpen={isPassOpen} onClose={closePassModal}>
+        <Modal.Header>Cambiar Contraseña</Modal.Header>
+        <Modal.Body>
+          <form id="pass-form" onSubmit={handlePasswordChange} className="space-y-5">
             {errorMsg && (
               <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-100">
                 {errorMsg}
@@ -229,19 +257,19 @@ export default function ProfileCard() {
                 required
               />
             </div>
-
-            <div className="flex justify-end gap-3 mt-8">
-              <Button variant="outline" type="button" onClick={closePassModal}>Cancelar</Button>
-              <Button 
-                type="submit" 
-                className="bg-amber-500 hover:bg-amber-600 font-black"
-                disabled={loading}
-              >
-                {loading ? "Procesando..." : "Actualizar Clave"}
-              </Button>
-            </div>
           </form>
-        </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline" type="button" onClick={closePassModal}>Cancelar</Button>
+          <Button 
+            type="button" 
+            onClick={() => handlePasswordChange()}
+            className="bg-amber-500 hover:bg-amber-600 font-semibold"
+            disabled={loading}
+          >
+            {loading ? "Procesando..." : "Actualizar Clave"}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </>
   );

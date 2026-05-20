@@ -109,6 +109,9 @@ export default function Accountant() {
     setIsEditModalOpen,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
+    isDeleteBlockedOpen,
+    setIsDeleteBlockedOpen,
+    deleteBlockedMessage,
     formData,
     openCreateModal,
     handleCreate,
@@ -135,8 +138,8 @@ export default function Accountant() {
       key: "nom_ctd",
       render: (item: AccountantItem) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 font-semibold text-sm">
-            {item.nom_ctd.charAt(0)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-semibold text-sm">
+            {item.nom_ctd.charAt(0).toUpperCase()}
           </div>
           <div>
             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
@@ -298,6 +301,34 @@ export default function Accountant() {
           >
             Sí, eliminar
           </button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* --- MODAL ELIMINACIÓN BLOQUEADA --- */}
+      <Modal isOpen={isDeleteBlockedOpen} onClose={() => setIsDeleteBlockedOpen(false)}>
+        <Modal.Header>Eliminación no permitida</Modal.Header>
+        <Modal.Body>
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20">
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              Cuentadante vinculado a otros registros
+            </h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {deleteBlockedMessage}
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors w-full"
+            onClick={() => setIsDeleteBlockedOpen(false)}
+          >
+            Entendido
+          </Button>
         </Modal.Footer>
       </Modal>
     </>

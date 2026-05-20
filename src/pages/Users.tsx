@@ -173,8 +173,8 @@ export default function Users() {
       key: "nom_usu",
       render: (item: UserItem) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400 font-semibold text-sm">
-            {item.nom_usu.charAt(0)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-semibold text-sm">
+            {item.nom_usu.charAt(0).toUpperCase()}
           </div>
           <div>
             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">

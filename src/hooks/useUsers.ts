@@ -65,6 +65,25 @@ export function useUsers() {
   };
 
   const handleCreate = async () => {
+    if (!formData.ced_usu || !formData.nom_usu || !formData.ema_usu || !formData.cla_usu) {
+      alert("Por favor, llene todos los campos requeridos.");
+      return;
+    }
+    // Validar formato cédula (solo números, 6-8 dígitos)
+    if (!/^\d{6,8}$/.test(formData.ced_usu.trim())) {
+      alert("La cédula debe contener solo números y tener entre 6 y 8 dígitos.");
+      return;
+    }
+    // Validar formato email
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.ema_usu.trim())) {
+      alert("El correo electrónico no tiene un formato válido.");
+      return;
+    }
+    // Validar contraseña mínimo 8 caracteres
+    if (formData.cla_usu.length < 8) {
+      alert("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
     try {
       const response = await userService.create(formData);
       if (isApiError(response)) throw new Error(response.statusText);
@@ -87,6 +106,20 @@ export function useUsers() {
 
   const handleSaveEdit = async () => {
     if (selectedUser) {
+      if (!formData.ced_usu || !formData.nom_usu || !formData.ema_usu) {
+        alert("Por favor, llene todos los campos requeridos.");
+        return;
+      }
+      // Validar formato email
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.ema_usu.trim())) {
+        alert("El correo electrónico no tiene un formato válido.");
+        return;
+      }
+      // Validar contraseña si se especificó
+      if (formData.cla_usu && formData.cla_usu.length < 8) {
+        alert("La nueva contraseña debe tener al menos 8 caracteres.");
+        return;
+      }
       try {
         const { ced_usu, ...data } = formData;
         // Logic: if password empty, don't send it

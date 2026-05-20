@@ -21,6 +21,8 @@ export function useBeneficiaries() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
+  const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
   const [formData, setFormData] = useState<BeneficiaryItem>(emptyForm);
 
   // --- Carga de Datos ---
@@ -64,6 +66,15 @@ export function useBeneficiaries() {
   };
 
   const handleCreate = async () => {
+    if (!formData.rif_ben || !formData.nom_ben || !formData.dir_ben) {
+      alert("Por favor, llene todos los campos requeridos.");
+      return;
+    }
+    // Validar formato RIF venezolano (J-12345678-9)
+    if (!/^[VJEGPvjegp]-?\d{8}-?\d$/.test(formData.rif_ben.trim())) {
+      alert("El formato del RIF no es válido. Ejemplo correcto: J-12345678-9");
+      return;
+    }
     try {
       const response = await beneficiaryService.create(formData);
       if (isApiError(response)) throw new Error(response.statusText);
@@ -83,6 +94,10 @@ export function useBeneficiaries() {
 
   const handleSaveEdit = async () => {
     if (selectedBeneficiary) {
+      if (!formData.rif_ben || !formData.nom_ben || !formData.dir_ben) {
+        alert("Por favor, llene todos los campos requeridos.");
+        return;
+      }
       try {
         const { rif_ben, ...data } = formData;
         const response = await beneficiaryService.update(rif_ben, data);
@@ -110,7 +125,9 @@ export function useBeneficiaries() {
         setIsDeleteModalOpen(false);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al eliminar beneficiario: " + message);
+        setIsDeleteModalOpen(false);
+        setDeleteBlockedMessage("Error al eliminar beneficiario: " + message);
+        setIsDeleteBlockedOpen(true);
       }
     }
   };
@@ -132,6 +149,9 @@ export function useBeneficiaries() {
     setIsEditModalOpen,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
+    isDeleteBlockedOpen,
+    setIsDeleteBlockedOpen,
+    deleteBlockedMessage,
     formData,
     openCreateModal,
     handleCreate,

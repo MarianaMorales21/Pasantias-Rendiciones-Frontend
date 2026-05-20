@@ -1,7 +1,7 @@
 export interface SurrenderDetailsItem {
     cod_drn: number;
     cab_drn: number; // cod_ndb
-    par_drn: number; // cod_par
+    par_drn: number | null; // cod_par
     des_drn: string;
     mon_drn: number;
     cod_pro?: number;

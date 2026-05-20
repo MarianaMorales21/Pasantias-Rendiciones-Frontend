@@ -119,7 +119,7 @@ export function DetailedReportPreview({ data, authorities }: { data: FullDetaile
               <td className="border border-gray-300 p-1">{summary.montoAsignadoFmt}</td>
               <td className="border border-gray-300 p-1">{summary.montoRendidoAnteriorFmt}</td>
               <td className="border border-gray-300 p-1 font-bold">{summary.montoRendidoFmt}</td>
-              <td className="border border-gray-300 p-1">0,00</td>
+              <td className="border border-gray-300 p-1">{summary.reintegroFmt || "0,00"}</td>
               <td className="border border-gray-300 p-1 font-bold">{summary.montoPorRendirFmt}</td>
               <td className="border border-gray-300 p-1">{summary.porcentajePorRendir || 0}%</td>
             </tr>

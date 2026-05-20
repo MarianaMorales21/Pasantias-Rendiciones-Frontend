@@ -4,10 +4,13 @@ import {
   FullDetailedReport,
   FullActaReport,
   RenditionListItem,
+  FullOPGReport,
+  DashboardStatsResponse
 } from "../types/reports";
 
 const api = helpHttp();
 const url = `${API_BASE_URL}/reports`;
+
 
 export const reportService = {
   // Lista de rendiciones activas para el selector
@@ -23,5 +26,15 @@ export const reportService = {
   // Acta de entrega (carta formal)
   getActaReport: (cod_rnd: number | string): Promise<ApiResponse<FullActaReport>> => {
     return api.get(`${url}/acta/${cod_rnd}`) as Promise<ApiResponse<FullActaReport>>;
+  },
+
+  // Reporte Historial completo de la OPG
+  getFullOPGReport: (cod_opg: number | string): Promise<ApiResponse<FullOPGReport>> => {
+    return api.get(`${url}/opg/${cod_opg}`) as Promise<ApiResponse<FullOPGReport>>;
+  },
+
+  // Estadísticas globales para el dashboard
+  getDashboardStats: (): Promise<ApiResponse<DashboardStatsResponse>> => {
+    return api.get(`${url}/dashboard-stats`) as Promise<ApiResponse<DashboardStatsResponse>>;
   },
 };

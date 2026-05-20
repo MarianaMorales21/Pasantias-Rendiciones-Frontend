@@ -1,6 +1,7 @@
 import { FullDetailedReport } from "../../types/reports";
 import { AuthorityItem } from "../../types/authorities";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { exportSolicitudFormaPDF } from "../../utils/pdfGenerators";
 
 export function SolicitudFormaPreview({ data, authorities }: { data: FullDetailedReport, authorities: AuthorityItem[] }) {

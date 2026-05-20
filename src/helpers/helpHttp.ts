@@ -7,6 +7,7 @@ export interface ApiError {
   err: boolean;
   status: string | number;
   statusText: string;
+  message?: string; // mensaje opcional del backend (ej. 409 Conflict)
 }
 
 export type ApiResponse<T> = T | ApiError;
@@ -23,11 +24,12 @@ export const isApiError = (res: unknown): res is ApiError => {
 export const helpHttp = () => {
   const handleErrors = (response: Response): Promise<unknown> => {
     if (!response.ok) {
-      return response.json().catch(() => ({})).then((errorBody) => {
+      return response.json().catch(() => ({})).then((errorBody: { message?: string }) => {
         return Promise.reject({
           err: true,
           status: response.status || '00',
-          statusText: errorBody.message || response.statusText || 'error'
+          statusText: errorBody.message || response.statusText || 'error',
+          message: errorBody.message || response.statusText || 'error'
         });
       });
     }

@@ -22,6 +22,8 @@ export function useAccountants() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
+  const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
   const [formData, setFormData] = useState<AccountantItem>(emptyForm);
 
   // --- Carga de Datos ---
@@ -66,6 +68,10 @@ export function useAccountants() {
   };
 
   const handleCreate = async () => {
+    if (!formData.ced_ctd || !formData.nom_ctd || !formData.ape_ctd || !formData.dir_ctd) {
+      alert("Por favor, llene todos los campos requeridos.");
+      return;
+    }
     try {
       const response = await accountantService.create(formData);
       if (isApiError(response)) throw new Error(response.statusText);
@@ -85,6 +91,10 @@ export function useAccountants() {
 
   const handleSaveEdit = async () => {
     if (selectedAccountant) {
+      if (!formData.ced_ctd || !formData.nom_ctd || !formData.ape_ctd || !formData.dir_ctd) {
+        alert("Por favor, llene todos los campos requeridos.");
+        return;
+      }
       try {
         const { ced_ctd, ...data } = formData;
         const response = await accountantService.update(ced_ctd, data);
@@ -112,7 +122,9 @@ export function useAccountants() {
         setIsDeleteModalOpen(false);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al eliminar cuentadante: " + message);
+        setIsDeleteModalOpen(false);
+        setDeleteBlockedMessage(message);
+        setIsDeleteBlockedOpen(true);
       }
     }
   };
@@ -134,6 +146,9 @@ export function useAccountants() {
     setIsEditModalOpen,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
+    isDeleteBlockedOpen,
+    setIsDeleteBlockedOpen,
+    deleteBlockedMessage,
     formData,
     openCreateModal,
     handleCreate,

@@ -6,6 +6,7 @@ export interface SurrenderItem {
     prd_rnd: string;
     avs_rnd: string;
     sta_rnd: number;
+    rnt_rnd?: number | string | null; // Reintegro (refund)
     // Campos joined desde el backend
     num_opg?: string | number;
     mon_opg?: number | string;

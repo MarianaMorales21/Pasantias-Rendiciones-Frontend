@@ -22,6 +22,8 @@ export function usePrograms() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
+  const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
   const [formData, setFormData] = useState<ProgramsItem>(emptyForm);
 
   // --- Carga de Datos ---
@@ -64,9 +66,14 @@ export function usePrograms() {
   };
 
   const handleCreate = async () => {
+    if (!formData.nom_pro) {
+      alert("Por favor, llene todos los campos requeridos.");
+      return null;
+    }
     setIsLoading(true);
     try {
-      const { cod_pro: _, ...body } = formData;
+      const { cod_pro, ...body } = formData;
+      void cod_pro;
       const response = await programsService.create(body);
       if (isApiError(response)) throw new Error(response.statusText || "Error desconocido");
       await fetchData();
@@ -89,6 +96,10 @@ export function usePrograms() {
 
   const handleUpdate = async () => {
     if (selectedProgram) {
+      if (!formData.nom_pro) {
+        alert("Por favor, llene todos los campos requeridos.");
+        return false;
+      }
       setIsLoading(true);
       try {
         const { cod_pro, ...body } = formData;
@@ -123,7 +134,9 @@ export function usePrograms() {
         return true;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al eliminar programa: " + message);
+        setIsDeleteModalOpen(false);
+        setDeleteBlockedMessage(message);
+        setIsDeleteBlockedOpen(true);
         return false;
       } finally {
         setIsLoading(false);
@@ -148,6 +161,9 @@ export function usePrograms() {
     setIsEditModalOpen,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
+    isDeleteBlockedOpen,
+    setIsDeleteBlockedOpen,
+    deleteBlockedMessage,
     formData,
     openCreateModal,
     handleCreate,

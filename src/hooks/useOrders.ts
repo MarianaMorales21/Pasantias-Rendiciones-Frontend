@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { orderService } from "../services/orderService";
 import { OrderItem } from "../types/orders";
-import { isApiError } from "../helpers/helpHttp";
+import { isApiError, ApiError } from "../helpers/helpHttp";
 
 export const useOrders = () => {
     const [data, setData] = useState<OrderItem[]>([]);
@@ -27,11 +27,26 @@ export const useOrders = () => {
     };
 
     const handleCreate = async (formData: Partial<OrderItem>) => {
+        if (!formData.num_opg || !formData.ced_opg || !formData.fec_opg || !formData.fdc_opg || !formData.dcr_opg || !formData.mon_opg || !formData.con_opg || !formData.par_opg) {
+            alert("Por favor, llene todos los campos requeridos.");
+            return null;
+        }
+        // Validar monto mayor a 0
+        if (Number(formData.mon_opg) <= 0) {
+            alert("El monto de la Orden de Pago debe ser mayor a cero.");
+            return null;
+        }
+        // Validar fecha decreto no mayor a fecha orden
+        if (formData.fdc_opg && formData.fec_opg && new Date(formData.fdc_opg) > new Date(formData.fec_opg)) {
+            alert("La fecha del decreto no puede ser posterior a la fecha de la Orden de Pago.");
+            return null;
+        }
         setIsLoading(true);
         try {
             const response = await orderService.create(formData);
             if (isApiError(response)) {
-                alert("Error al crear orden: " + (response.statusText || "Error desconocido"));
+                const msg = (response as ApiError).message || response.statusText || "Error desconocido";
+                alert("Error al crear orden: " + msg);
                 return null;
             }
             await fetchData();
@@ -46,11 +61,26 @@ export const useOrders = () => {
     };
 
     const handleUpdate = async (id: number, formData: Partial<OrderItem>) => {
+        if (!formData.num_opg || !formData.ced_opg || !formData.fec_opg || !formData.fdc_opg || !formData.dcr_opg || !formData.mon_opg || !formData.con_opg || !formData.par_opg) {
+            alert("Por favor, llene todos los campos requeridos.");
+            return false;
+        }
+        // Validar monto mayor a 0
+        if (Number(formData.mon_opg) <= 0) {
+            alert("El monto de la Orden de Pago debe ser mayor a cero.");
+            return false;
+        }
+        // Validar fecha decreto no mayor a fecha orden
+        if (formData.fdc_opg && formData.fec_opg && new Date(formData.fdc_opg) > new Date(formData.fec_opg)) {
+            alert("La fecha del decreto no puede ser posterior a la fecha de la Orden de Pago.");
+            return false;
+        }
         setIsLoading(true);
         try {
             const response = await orderService.update(id, formData);
             if (isApiError(response)) {
-                alert("Error al actualizar orden: " + (response.statusText || "Error desconocido"));
+                const msg = (response as ApiError).message || response.statusText || "Error desconocido";
+                alert("Error al actualizar orden: " + msg);
                 return false;
             }
             await fetchData();
@@ -69,15 +99,14 @@ export const useOrders = () => {
         try {
             const response = await orderService.delete(id);
             if (isApiError(response)) {
-                alert("Error al eliminar orden: " + (response.statusText || "Error desconocido"));
-                return false;
+                const msg = (response as ApiError).message || response.statusText || "Error desconocido";
+                return { success: false, error: msg };
             }
             await fetchData();
-            return true;
+            return { success: true };
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error de red";
-            alert("Error al eliminar orden: " + message);
-            return false;
+            return { success: false, error: message };
         } finally {
             setIsLoading(false);
         }

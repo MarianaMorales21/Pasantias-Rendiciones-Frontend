@@ -1,28 +1,34 @@
-import  { useState } from "react";
+import { useState } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 
-export default function BudgetByProgramChart() {
+interface ProgramStat {
+    cod_pro: number;
+    nom_pro: string;
+    gastado_anual: number;
+    gastado_mensual: number;
+}
+
+interface BudgetByProgramChartProps {
+    stats?: ProgramStat[];
+}
+
+export default function BudgetByProgramChart({ stats = [] }: BudgetByProgramChartProps) {
     const [viewType, setViewType] = useState<"Mensual" | "Anual">("Anual");
 
-    // Datos simulados basados en los programas de tu captura
+    const categories = stats.map(s => s.nom_pro.substring(0, 15) + (s.nom_pro.length > 15 ? '...' : ''));
+    const dataAnual = stats.map(s => Number(s.gastado_anual));
+    const dataMensual = stats.map(s => Number(s.gastado_mensual));
+
     const series = [
         {
-            name: "Presupuesto Asignado",
-            data: viewType === "Anual"
-                ? [45000, 32000, 58000, 25000, 15000]
-                : [4000, 2500, 5000, 2000, 1200],
-        },
-        {
             name: "Monto Ejecutado",
-            data: viewType === "Anual"
-                ? [38000, 28000, 42000, 18000, 14500]
-                : [3200, 2100, 3800, 1500, 1100],
-        },
+            data: viewType === "Anual" ? dataAnual : dataMensual,
+        }
     ];
 
     const chartOptions: ApexOptions = {
-        colors: ["#465FFF", "#9CB9FF"], // Azul principal y un azul más claro para contraste
+        colors: ["#465FFF"], 
         chart: {
             fontFamily: "Outfit, sans-serif",
             type: "bar",
@@ -43,13 +49,7 @@ export default function BudgetByProgramChart() {
             colors: ["transparent"],
         },
         xaxis: {
-            categories: [
-                "PROG. ALIMENTARIO",
-                "SALUD RURAL",
-                "INFRAEST.",
-                "EDUCACIÓN",
-                "EMERGENCIAS",
-            ],
+            categories: categories.length > 0 ? categories : ["Sin Datos"],
             axisBorder: { show: false },
             axisTicks: { show: false },
             labels: {
@@ -63,13 +63,17 @@ export default function BudgetByProgramChart() {
         yaxis: {
             labels: {
                 style: { colors: "#64748B" },
-                formatter: (val) => `$${val / 1000}k`,
+                formatter: (val) => {
+                    if (val >= 1000000) return `Bs. ${(val / 1000000).toFixed(1)}M`;
+                    if (val >= 1000) return `Bs. ${(val / 1000).toFixed(1)}k`;
+                    return `Bs. ${val}`;
+                },
             },
         },
         fill: { opacity: 1 },
         tooltip: {
             y: {
-                formatter: (val) => `$ ${val.toLocaleString()}`,
+                formatter: (val) => `Bs. ${val.toLocaleString('es-VE')}`,
             },
         },
         legend: {
@@ -79,8 +83,8 @@ export default function BudgetByProgramChart() {
             fontWeight: 500,
             fontSize: "14px",
             markers: {
-                shape: "circle", // Define la forma redondeada
-                size: 6          // El tamaño del marcador
+                shape: "circle", 
+                size: 6          
             },
         },
         grid: {
@@ -96,10 +100,10 @@ export default function BudgetByProgramChart() {
             <div className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">
-                        Presupuesto por Programa
+                        Gastos por Programa
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Comparativa de asignación vs ejecución
+                        Total ejecutado de todos los fondos
                     </p>
                 </div>
 
@@ -112,7 +116,7 @@ export default function BudgetByProgramChart() {
                                 : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
-                        Mensual
+                        Mes Actual
                     </button>
                     <button
                         onClick={() => setViewType("Anual")}
@@ -121,7 +125,7 @@ export default function BudgetByProgramChart() {
                                 : "text-gray-500 hover:text-gray-700"
                             }`}
                     >
-                        Anual
+                        Año Actual
                     </button>
                 </div>
             </div>

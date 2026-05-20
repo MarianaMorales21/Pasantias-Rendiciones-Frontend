@@ -5,6 +5,7 @@ import PageMeta from "../components/common/PageMeta";
 import ComponentCard from "../components/common/ComponentCard";
 import Button from "../components/ui/button/Button";
 import { useAuthorities } from "../hooks/useAuthorities";
+import { SearchableSelect } from "../components/form/SearchableSelect";
 import {
   FileIcon,
   DownloadIcon,
@@ -82,6 +83,7 @@ export default function Reports() {
       fetchDetailedReport(Number(rndId));
     }
   }, [handleSelectRnd, fetchDetailedReport]);
+  
 
   const handleExportPDF = async () => {
     if (!detailedReport) return;
@@ -127,16 +129,15 @@ export default function Reports() {
             {/* SELECTOR */}
             <div className="w-full lg:w-80">
               <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] mb-2 ml-1">Seleccionar Rendición</label>
-              <select
-                value={selectedRnd || ""}
-                onChange={(e) => handleSelectRnd(Number(e.target.value))}
-                className="w-full h-12 rounded-xl border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
-              >
-                <option value="">Seleccione una...</option>
-                {renditionList.map((rnd) => (
-                  <option key={rnd.cod_rnd} value={rnd.cod_rnd}>RND 0{rnd.num_rnd} — OPG {rnd.num_opg}</option>
-                ))}
-              </select>
+              <SearchableSelect
+                options={renditionList.map((rnd) => ({
+                  value: rnd.cod_rnd,
+                  label: `RND 0${rnd.num_rnd} — OPG ${rnd.num_opg}`,
+                }))}
+                value={selectedRnd === "" ? null : selectedRnd}
+                onChange={(val) => handleSelectRnd(val === null ? "" : val)}
+                placeholder="Escriba o seleccione rendición..."
+              />
             </div>
 
             {/* CUADROS INFORMATIVOS - MÁS AZULADOS Y GRANDES */}

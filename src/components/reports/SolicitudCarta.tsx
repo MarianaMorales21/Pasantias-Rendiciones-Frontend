@@ -2,6 +2,7 @@ import { FullDetailedReport } from "../../types/reports";
 import { AuthorityItem } from "../../types/authorities";
 import { numberToLetters } from "../../helpers/numberToLetters";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { exportSolicitudCartaPDF } from "../../utils/pdfGenerators";
 
 export function SolicitudCartaPreview({ data, authorities }: { data: FullDetailedReport, authorities: AuthorityItem[] }) {

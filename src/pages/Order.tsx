@@ -52,7 +52,7 @@ const emptyForm: OrderFormData = {
 // ─── Componente de formulario ────────────────────────────────────────────────
 function OrderForm({ formData, onChange, cuentadantes, states, partidas }: OrderFormProps) {
   return (
-    <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+    <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar p-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="f-num">Nro. de Orden</Label>
@@ -64,10 +64,19 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             onChange={(e) => onChange("num_opg", parseInt(e.target.value) || 0)}
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
+          <Label htmlFor="f-monto">Monto (Bs.)</Label>
+          <Input
+            id="f-monto"
+            type="number"
+            step={0.01}
+            placeholder="Ej: 15000.00"
+            value={formData.mon_opg}
+            onChange={(e) => onChange("mon_opg", e.target.value)}
+          />
+        </div>
+
+        <div className="sm:col-span-2">
           <Label htmlFor="f-cuentadante">Cuentadante</Label>
           <select
             id="f-cuentadante"
@@ -83,20 +92,7 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             ))}
           </select>
         </div>
-        <div>
-          <Label htmlFor="f-monto">Monto (Bs.)</Label>
-          <Input
-            id="f-monto"
-            type="number"
-            step={0.01}
-            placeholder="Ej: 15000.00"
-            value={formData.mon_opg}
-            onChange={(e) => onChange("mon_opg", e.target.value)}
-          />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="f-fec">Fecha Emisión</Label>
           <Input
@@ -115,9 +111,7 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             onChange={(e) => onChange("fco_opg", e.target.value)}
           />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="f-fdc">Fecha Decreto</Label>
           <Input
@@ -137,9 +131,7 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             onChange={(e) => onChange("dcr_opg", e.target.value)}
           />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="f-par">Partida Presupuestaria</Label>
           <select
@@ -156,34 +148,33 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             ))}
           </select>
         </div>
-      </div>
+        <div>
+          <Label htmlFor="f-estado">Estado</Label>
+          <select
+            id="f-estado"
+            value={formData.sta_opg}
+            onChange={(e) => onChange("sta_opg", parseInt(e.target.value))}
+            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          >
+            <option value={0}>Seleccione un estado</option>
+            {states.map((s) => (
+              <option key={s.cod_sta} value={s.cod_sta}>
+                {s.nom_sta}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div>
-        <Label htmlFor="f-con">Concepto</Label>
-        <textarea
-          id="f-con"
-          rows={2}
-          className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          value={formData.con_opg}
-          onChange={(e) => onChange("con_opg", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="f-estado">Estado</Label>
-        <select
-          id="f-estado"
-          value={formData.sta_opg}
-          onChange={(e) => onChange("sta_opg", parseInt(e.target.value))}
-          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-        >
-          <option value={0}>Seleccione un estado</option>
-          {states.map((s) => (
-            <option key={s.cod_sta} value={s.cod_sta}>
-              {s.nom_sta}
-            </option>
-          ))}
-        </select>
+        <div className="sm:col-span-2">
+          <Label htmlFor="f-con">Concepto</Label>
+          <textarea
+            id="f-con"
+            rows={2}
+            className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            value={formData.con_opg}
+            onChange={(e) => onChange("con_opg", e.target.value)}
+          />
+        </div>
       </div>
     </Modal.Body>
   );
@@ -201,6 +192,8 @@ export default function Order() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
+  const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
   const [formData, setFormData] = useState<OrderFormData>(emptyForm);
 
   // --- Búsqueda ---
@@ -254,9 +247,13 @@ export default function Order() {
 
   const handleDelete = async () => {
     if (selectedOrder) {
-      const success = await apiDeleteOrder(selectedOrder.cod_opg);
-      if (success) {
+      const result = await apiDeleteOrder(selectedOrder.cod_opg);
+      if (result.success) {
         setIsDeleteModalOpen(false);
+      } else {
+        setIsDeleteModalOpen(false);
+        setDeleteBlockedMessage(result.error || "No se puede eliminar la orden.");
+        setIsDeleteBlockedOpen(true);
       }
     }
   };
@@ -267,34 +264,37 @@ export default function Order() {
   // --- Columnas ---
   const columns = [
     {
-      header: "ID",
-      key: "cod_opg",
-      render: (item: OrderItem) => (
-        <span className="text-gray-600 dark:text-gray-400 text-theme-sm">
-          #{item.cod_opg}
-        </span>
-      ),
-    },
-    {
       header: "Nro. Orden",
       key: "num_opg",
       render: (item: OrderItem) => (
-        <span className="font-medium text-gray-800 dark:text-white/90">
-          {item.num_opg}
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-bold text-sm">
+            {item.cod_opg}
+          </div>
+          <div>
+            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+              Nro. {item.num_opg}
+            </span>
+          </div>
+        </div>
       ),
     },
     {
       header: "Cuentadante",
       key: "cuentadante",
       render: (item: OrderItem) => (
-        <div className="flex flex-col">
-          <span className="text-gray-800 dark:text-white/90 font-medium text-theme-sm">
-            {item.nom_ctd} {item.ape_ctd}
-          </span>
-          <span className="text-gray-500 dark:text-gray-400 text-xs">
-            V-{item.ced_opg}
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-semibold text-sm">
+            {item.nom_ctd ? item.nom_ctd.charAt(0).toUpperCase() : "C"}
+          </div>
+          <div>
+            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+              {item.nom_ctd} {item.ape_ctd}
+            </span>
+            <span className="block text-gray-500 dark:text-gray-400 text-xs">
+              V-{item.ced_opg}
+            </span>
+          </div>
         </div>
       ),
     },
@@ -467,6 +467,34 @@ export default function Order() {
             className="bg-red-600 text-white hover:bg-red-700 font-medium"
           >
             {isLoading ? "Eliminando..." : "Sí, eliminar"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* --- MODAL ELIMINACIÓN BLOQUEADA --- */}
+      <Modal isOpen={isDeleteBlockedOpen} onClose={() => setIsDeleteBlockedOpen(false)}>
+        <Modal.Header>Operación no permitida</Modal.Header>
+        <Modal.Body>
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20">
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              Eliminación no disponible
+            </h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {deleteBlockedMessage}
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors w-full"
+            onClick={() => setIsDeleteBlockedOpen(false)}
+          >
+            Entendido
           </Button>
         </Modal.Footer>
       </Modal>
