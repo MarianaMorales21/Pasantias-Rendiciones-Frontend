@@ -54,9 +54,8 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
   const today = new Date().toISOString().split("T")[0];
   const futureDateEmision = formData.fec_opg && formData.fec_opg > today;
   const futureDateCobro = formData.fco_opg && formData.fco_opg > today;
-  const futureDateDecreto = formData.fdc_opg && formData.fdc_opg > today;
   const cobroAntesDeEmision = formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg;
-  const decretoAntesDeEmision = formData.fdc_opg && formData.fec_opg && formData.fdc_opg < formData.fec_opg;
+  const decretoPosteriorAEmision = formData.fdc_opg && formData.fec_opg && formData.fdc_opg > formData.fec_opg;
 
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar p-4">
@@ -143,16 +142,11 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             type="date"
             value={formData.fdc_opg ? formData.fdc_opg.split('T')[0] : ""}
             onChange={(e) => onChange("fdc_opg", e.target.value)}
-            className={futureDateDecreto || decretoAntesDeEmision ? "border-red-500" : ""}
+            className={decretoPosteriorAEmision ? "border-red-500" : ""}
           />
-          {futureDateDecreto && (
+          {decretoPosteriorAEmision && (
             <p className="text-xs text-red-500 mt-1 font-medium">
-              La fecha de decreto no puede ser posterior a hoy.
-            </p>
-          )}
-          {decretoAntesDeEmision && (
-            <p className="text-xs text-red-500 mt-1 font-medium">
-              La fecha de decreto no puede ser anterior a la fecha de emisión.
+              La fecha de decreto no puede ser posterior a la fecha de emisión.
             </p>
           )}
         </div>

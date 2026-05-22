@@ -26,13 +26,15 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   const onChange = <K extends keyof SurrenderItem>(field: K, value: SurrenderItem[K]) =>
     setRndFormData({ ...rndFormData, [field]: value });
 
-  // Bloquear reintegro si es la primera rendición de la OPG (solo al crear)
+  // Bloquear reintegro si es la primera rendición de la OPG (la de menor cod_rnd)
   const selectedRndForFilter = (hook as any).selectedRnd;
-  const existingRenditionsForOpg = renditions.filter(r =>
-    r.opg_rnd === rndFormData.opg_rnd &&
-    (!selectedRndForFilter || r.cod_rnd !== selectedRndForFilter.cod_rnd)
-  );
-  const isFirstRendition = !selectedRndForFilter && rndFormData.opg_rnd > 0 && existingRenditionsForOpg.length === 0;
+  const rndsDeEstaOpg = renditions.filter(r => Number(r.opg_rnd) === Number(rndFormData.opg_rnd));
+  const codRndActual = selectedRndForFilter?.cod_rnd;
+  const minCodRnd = rndsDeEstaOpg.length > 0 ? Math.min(...rndsDeEstaOpg.map(r => r.cod_rnd)) : null;
+  const esLaPrimera = codRndActual !== undefined && codRndActual !== null
+    ? codRndActual === minCodRnd
+    : rndsDeEstaOpg.length === 0;
+  const isFirstRendition = rndFormData.opg_rnd > 0 && esLaPrimera;
 
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto">
@@ -124,7 +126,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   }
 
   // Cálculos de retenciones
-  const sumRetenciones = (ndbFormData.rtc_ndb || 0) + (ndbFormData.tbf_ndb || 0) + (ndbFormData.isl_ndb || 0);
+  const sumRetenciones = Number(ndbFormData.rtc_ndb || 0) + Number(ndbFormData.tbf_ndb || 0) + Number(ndbFormData.isl_ndb || 0);
   const monOpgActual = Number(selectedOpg?.mon_opg || 0);
 
   const retencionesInvalidas = ndbFormData.has_retention && (
@@ -133,7 +135,11 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
     Number(ndbFormData.isl_ndb || 0) >= monOpgActual
   );
   const subtotalValido = ndbFormData.has_retention
-    ? (ndbFormData.sub_ndb || 0) >= sumRetenciones
+    ? (ndbFormData.sub_ndb || 0) > sumRetenciones &&
+      Number(ndbFormData.sub_ndb || 0) <= monOpgActual &&
+      Number(ndbFormData.rtc_ndb || 0) <= Number(ndbFormData.sub_ndb || 0) &&
+      Number(ndbFormData.tbf_ndb || 0) <= Number(ndbFormData.sub_ndb || 0) &&
+      Number(ndbFormData.isl_ndb || 0) <= Number(ndbFormData.sub_ndb || 0)
     : true;
 
   // Si hay retenciones, mon_ndb = subtotal - (IVA + Timbre + ISLR)
@@ -305,7 +311,12 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
                 onChange={(e) => onChange("sub_ndb", parseFloat(e.target.value) || 0)}
                 className={!subtotalValido ? "border-red-500" : ""}
               />
-              {!subtotalValido && (
+              {ndbFormData.has_retention && Number(ndbFormData.sub_ndb || 0) > monOpgActual && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  El subtotal no puede superar el monto de la OPG (Bs. {monOpgActual.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+                </p>
+              )}
+              {!subtotalValido && Number(ndbFormData.sub_ndb || 0) <= monOpgActual && (
                 <p className="text-xs text-red-500 mt-1 font-medium">
                   El subtotal no puede ser menor a la suma de las retenciones.
                 </p>
@@ -320,7 +331,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               step={0.01}
               value={monNdbCalculado || ""}
               disabled
-              className={(!subtotalValido || retencionesInvalidas) ? "border-red-500" : ""}
+              className={`cursor-not-allowed bg-gray-100 dark:bg-gray-700 ${(!subtotalValido || retencionesInvalidas) ? "border-red-500" : ""}`}
             />
             {retencionesInvalidas && (
               <p className="text-xs text-red-500 mt-1 font-medium">
@@ -458,6 +469,7 @@ export default function Surrender() {
     }
 
     if (type === 'rnd') {
+      setSelectedRnd(null);
       setRndFormData({ ...emptyRndForm, opg_rnd: selectedOpg!.cod_opg });
       setIsRndCreateOpen(true);
     } else if (type === 'ndb') {
@@ -723,20 +735,20 @@ export default function Surrender() {
       )}
 
       {/* MODALES: RENDICIÓN */}
-      <Modal isOpen={isRndCreateOpen} onClose={() => setIsRndCreateOpen(false)}>
+      <Modal isOpen={isRndCreateOpen} onClose={() => { setIsRndCreateOpen(false); setSelectedRnd(null); }}>
         <Modal.Header>Nueva Rendición</Modal.Header>
         <RndForm hook={hook} />
         <Modal.Footer>
-          <Button variant="outline" onClick={() => setIsRndCreateOpen(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => { setIsRndCreateOpen(false); setSelectedRnd(null); }}>Cancelar</Button>
           <Button onClick={handleRndCreate}>Crear</Button>
         </Modal.Footer>
       </Modal>
 
-      <Modal isOpen={isRndEditOpen} onClose={() => setIsRndEditOpen(false)}>
+      <Modal isOpen={isRndEditOpen} onClose={() => { setIsRndEditOpen(false); setSelectedRnd(null); }}>
         <Modal.Header>Editar Rendición</Modal.Header>
         <RndForm hook={hook} />
         <Modal.Footer>
-          <Button variant="outline" onClick={() => setIsRndEditOpen(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => { setIsRndEditOpen(false); setSelectedRnd(null); }}>Cancelar</Button>
           <Button onClick={handleRndUpdate}>Guardar</Button>
         </Modal.Footer>
       </Modal>

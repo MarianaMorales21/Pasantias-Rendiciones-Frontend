@@ -330,9 +330,9 @@ export function useSurrender() {
             return;
         }
 
-        // Validar que la primera rendición no tenga reintegro
-        const existingRenditionsForOpg = renditions.filter(r => r.opg_rnd === rndFormData.opg_rnd);
-        if (existingRenditionsForOpg.length === 0 && rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
+        // Validar que la primera rendición de la OPG no tenga reintegro
+        const rndsDeEstaOpg = renditions.filter(r => Number(r.opg_rnd) === Number(rndFormData.opg_rnd));
+        if (rndsDeEstaOpg.length === 0 && rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
             alert("La primera rendición de una Orden de Pago no puede tener reintegro.");
             return;
         }
@@ -372,6 +372,16 @@ export function useSurrender() {
         if (!rndFormData.num_rnd || !rndFormData.fec_rnd || !rndFormData.prd_rnd) {
             alert("Por favor, llene todos los campos requeridos.");
             return;
+        }
+
+        // Validar que la primera rendición de la OPG no tenga reintegro
+        if (selectedRnd) {
+            const rndsDeEstaOpg = renditions.filter(r => Number(r.opg_rnd) === Number(rndFormData.opg_rnd));
+            const minCodRnd = rndsDeEstaOpg.length > 0 ? Math.min(...rndsDeEstaOpg.map(r => r.cod_rnd)) : null;
+            if (selectedRnd.cod_rnd === minCodRnd && rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
+                alert("La primera rendición de una Orden de Pago no puede tener reintegro.");
+                return;
+            }
         }
 
         setIsLoading(true);
