@@ -95,6 +95,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Forzar verificación de sesión cuando la página se carga desde bfcache
+  // (evita que el botón "atrás" muestre una sesión ya cerrada)
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        verifySession();
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Verificar sesión al montar el componente
   useEffect(() => {
     verifySession();
   // eslint-disable-next-line react-hooks/exhaustive-deps

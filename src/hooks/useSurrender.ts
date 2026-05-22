@@ -143,7 +143,7 @@ export function useSurrender() {
     // CÁLCULOS FINANCIEROS
     // ─────────────────────────────────────────────────────────
 
-    // Total rendido = suma de todas las notas de la OPG
+    // Total rendido = suma de mon_ndb de todas las notas de la OPG
     const totalRendered = opgDebitNotes.reduce(
         (acc, note) => acc + Number(note.mon_ndb || 0),
         0
@@ -330,6 +330,13 @@ export function useSurrender() {
             return;
         }
 
+        // Validar que la primera rendición no tenga reintegro
+        const existingRenditionsForOpg = renditions.filter(r => r.opg_rnd === rndFormData.opg_rnd);
+        if (existingRenditionsForOpg.length === 0 && rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
+            alert("La primera rendición de una Orden de Pago no puede tener reintegro.");
+            return;
+        }
+
         setIsLoading(true);
         try {
             const body = {
@@ -446,13 +453,27 @@ export function useSurrender() {
             return;
         }
 
-        if (!ndbFormData.num_ndb || !ndbFormData.fec_ndb || !ndbFormData.rif_ndb || !ndbFormData.pro_ndb || !ndbFormData.mon_ndb) {
+        // Calcular mon_ndb si hay retenciones (subtotal - retenciones)
+        const monCalculado = ndbFormData.has_retention
+            ? Math.round(((ndbFormData.sub_ndb || 0) - (ndbFormData.rtc_ndb || 0) - (ndbFormData.tbf_ndb || 0) - (ndbFormData.isl_ndb || 0)) * 100) / 100
+            : ndbFormData.mon_ndb;
+
+        if (!ndbFormData.num_ndb || !ndbFormData.fec_ndb || !ndbFormData.rif_ndb || !ndbFormData.pro_ndb || !monCalculado) {
             alert("Por favor, llene todos los campos requeridos.");
             return;
         }
 
+        // Validar fecha no futura
+        if (ndbFormData.fec_ndb && new Date(ndbFormData.fec_ndb) > new Date()) {
+            alert("La fecha de la Nota de Débito no puede ser posterior a la fecha actual.");
+            return;
+        }
+
+        // Para validar contra OPG, usar mon_ndb (el subtotal solo aplica para detalles)
+        const montoARendir = ndbFormData.mon_ndb || 0;
+
         const { valid, remaining } = validateDebitNoteAmount(
-            ndbFormData.mon_ndb,
+            montoARendir,
             selectedOpg,
             selectedRnd,
             opgDebitNotes,
@@ -468,7 +489,14 @@ export function useSurrender() {
 
         setIsLoading(true);
         try {
-            const res = await debitNoteService.create(ndbFormData);
+            const ndbData = {
+                ...ndbFormData,
+                mon_ndb: monCalculado,
+                num_ndb: ndbFormData.num_ndb.startsWith("ND-")
+                    ? ndbFormData.num_ndb
+                    : "ND-" + ndbFormData.num_ndb,
+            };
+            const res = await debitNoteService.create(ndbData);
 
             if (isApiError(res)) {
                 const msg = (res as ApiError).message || res.statusText || "Error desconocido";
@@ -493,22 +521,36 @@ export function useSurrender() {
     const handleNdbUpdate = async () => {
         if (!selectedNdb) return;
 
+        // Calcular mon_ndb si hay retenciones (subtotal - retenciones)
+        const monCalculado = ndbFormData.has_retention
+            ? Math.round(((ndbFormData.sub_ndb || 0) - (ndbFormData.rtc_ndb || 0) - (ndbFormData.tbf_ndb || 0) - (ndbFormData.isl_ndb || 0)) * 100) / 100
+            : ndbFormData.mon_ndb;
+
         // Si la nota ya tiene detalles, el monto no puede ser menor a la suma de sus detalles
         const detailsSum = details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0);
-        if (Number(ndbFormData.mon_ndb) < detailsSum) {
+        if (monCalculado < detailsSum) {
             setIsNdbEditOpen(false);
             setWarningMessage(`No se puede reducir el monto de la nota de débito por debajo de la suma de sus detalles (Bs. ${detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
             setIsWarningOpen(true);
             return;
         }
 
-        if (!ndbFormData.num_ndb || !ndbFormData.fec_ndb || !ndbFormData.rif_ndb || !ndbFormData.pro_ndb || !ndbFormData.mon_ndb) {
+        if (!ndbFormData.num_ndb || !ndbFormData.fec_ndb || !ndbFormData.rif_ndb || !ndbFormData.pro_ndb || !monCalculado) {
             alert("Por favor, llene todos los campos requeridos.");
             return;
         }
 
+        // Validar fecha no futura
+        if (ndbFormData.fec_ndb && new Date(ndbFormData.fec_ndb) > new Date()) {
+            alert("La fecha de la Nota de Débito no puede ser posterior a la fecha actual.");
+            return;
+        }
+
+        // Para validar contra OPG, usar mon_ndb (el subtotal solo aplica para detalles)
+        const montoARendir = ndbFormData.mon_ndb || 0;
+
         const { valid, remaining } = validateDebitNoteAmount(
-            ndbFormData.mon_ndb,
+            montoARendir,
             selectedOpg,
             selectedRnd,
             opgDebitNotes,
@@ -525,7 +567,14 @@ export function useSurrender() {
 
         setIsLoading(true);
         try {
-            const res = await debitNoteService.update(String(selectedNdb.cod_ndb), ndbFormData);
+            const ndbData = {
+                ...ndbFormData,
+                mon_ndb: monCalculado,
+                num_ndb: ndbFormData.num_ndb.startsWith("ND-")
+                    ? ndbFormData.num_ndb
+                    : "ND-" + ndbFormData.num_ndb,
+            };
+            const res = await debitNoteService.update(String(selectedNdb.cod_ndb), ndbData);
             if (isApiError(res)) throw new Error(res.statusText);
 
             if (selectedRnd) await fetchDebitNotes(selectedRnd.cod_rnd);

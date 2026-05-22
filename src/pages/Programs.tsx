@@ -9,7 +9,9 @@ import Label from "../components/form/Label";
 import Badge from "../components/ui/badge/Badge";
 import { Modal } from "../components/ui/modal/index";
 import { usePrograms } from "../hooks/usePrograms";
+import { useStateData } from "../hooks/useStateData";
 import { ProgramsItem } from "../types/programs";
+import { StateItem } from "../types/state";
 import {
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -17,20 +19,14 @@ import {
   TrashBinIcon,
 } from "../icons";
 
-// --- Mapeos de Estados ---
-const statesMap: Record<number, string> = {
-  1: "Activo",
-  2: "Inactivo",
-  3: "Pendiente",
-};
-
 // ─── Componente de formulario ────────────────────────────────────────────────
 interface ProgramFormProps {
   formData: ProgramsItem;
   onChange: <K extends keyof ProgramsItem>(key: K, value: ProgramsItem[K]) => void;
+  states: StateItem[];
 }
 
-function ProgramForm({ formData, onChange }: ProgramFormProps) {
+function ProgramForm({ formData, onChange, states }: ProgramFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div>
@@ -50,9 +46,10 @@ function ProgramForm({ formData, onChange }: ProgramFormProps) {
           onChange={(e) => onChange("sta_pro", parseInt(e.target.value))}
           className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
         >
-          <option value={1}>Activo</option>
-          <option value={2}>Inactivo</option>
-          <option value={3}>Pendiente</option>
+          <option value={0}>Seleccione estado</option>
+          {states.map((s) => (
+            <option key={s.cod_sta} value={s.cod_sta}>{s.nom_sta}</option>
+          ))}
         </select>
       </div>
     </Modal.Body>
@@ -89,13 +86,16 @@ export default function Programs() {
     handleFieldChange,
   } = usePrograms();
 
-  const statusColor = (statusId: number) => {
-    const map: Record<number, "success" | "error" | "warning"> = {
-      1: "success", // Activo
-      2: "error",   // Inactivo
-      3: "warning", // Pendiente
-    };
-    return map[statusId] || "warning";
+  const { data: allStates } = useStateData();
+  const programStates = allStates.filter(
+    (s) => s.nom_sta === "Activo" || s.nom_sta === "Suspendido" || s.nom_sta === "Inactivo"
+  );
+
+  const statusColor = (nom_sta: string | undefined) => {
+    if (nom_sta === "Activo") return "success";
+    if (nom_sta === "Inactivo") return "error";
+    if (nom_sta === "Suspendido") return "warning";
+    return "warning";
   };
 
   // --- Columnas ---
@@ -120,10 +120,10 @@ export default function Programs() {
     },
     {
       header: "Estado",
-      key: "sta_pro",
+      key: "nom_sta",
       render: (item: ProgramsItem) => (
-        <Badge size="sm" color={statusColor(item.sta_pro)}>
-          {item.nom_sta || statesMap[item.sta_pro]}
+        <Badge size="sm" color={statusColor(item.nom_sta)}>
+          {item.nom_sta}
         </Badge>
       ),
     },
@@ -203,7 +203,7 @@ export default function Programs() {
       {/* --- MODAL CREAR --- */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header>Nuevo Programa</Modal.Header>
-        <ProgramForm formData={formData} onChange={handleFieldChange} />
+        <ProgramForm formData={formData} onChange={handleFieldChange} states={programStates} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
             Cancelar
@@ -215,7 +215,7 @@ export default function Programs() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Programa</Modal.Header>
-        <ProgramForm formData={formData} onChange={handleFieldChange} />
+        <ProgramForm formData={formData} onChange={handleFieldChange} states={programStates} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar

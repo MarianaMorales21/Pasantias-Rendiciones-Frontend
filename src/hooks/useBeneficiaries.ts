@@ -25,6 +25,10 @@ export function useBeneficiaries() {
   const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
   const [formData, setFormData] = useState<BeneficiaryItem>(emptyForm);
 
+  // Estado separado para el prefijo del RIF y el número
+  const [rifPrefix, setRifPrefix] = useState<"V" | "G">("V");
+  const [rifNum, setRifNum] = useState("");
+
   // --- Carga de Datos ---
   const fetchBeneficiaries = async () => {
     setLoading(true);
@@ -62,21 +66,33 @@ export function useBeneficiaries() {
   // --- Acciones ---
   const openCreateModal = () => {
     setFormData(emptyForm);
+    setRifPrefix("V");
+    setRifNum("");
     setIsCreateModalOpen(true);
   };
 
+  const buildRif = () => `${rifPrefix}-${rifNum}`;
+
   const handleCreate = async () => {
-    if (!formData.rif_ben || !formData.nom_ben || !formData.dir_ben) {
+    if (!rifNum || !formData.nom_ben || !formData.dir_ben) {
       alert("Por favor, llene todos los campos requeridos.");
       return;
     }
-    // Validar formato RIF venezolano (J-12345678-9)
-    if (!/^[VJEGPvjegp]-?\d{8}-?\d$/.test(formData.rif_ben.trim())) {
-      alert("El formato del RIF no es válido. Ejemplo correcto: J-12345678-9");
-      return;
+    const rifCompleto = buildRif();
+    // Validaciones según prefijo
+    if (rifPrefix === "V") {
+      if (!/^\d{7,8}$/.test(rifNum)) {
+        alert("La cédula debe tener entre 7 y 8 dígitos numéricos.");
+        return;
+      }
+    } else {
+      if (!/^\d+-\d$/.test(rifNum)) {
+        alert("Para el tipo G, el número debe tener el último dígito separado por un guion. Ej: 12345678-1");
+        return;
+      }
     }
     try {
-      const response = await beneficiaryService.create(formData);
+      const response = await beneficiaryService.create({ ...formData, rif_ben: rifCompleto });
       if (isApiError(response)) throw new Error(response.statusText);
       fetchBeneficiaries();
       setIsCreateModalOpen(false);
@@ -89,18 +105,28 @@ export function useBeneficiaries() {
   const openEditModal = (beneficiary: BeneficiaryItem) => {
     setSelectedBeneficiary(beneficiary);
     setFormData({ ...beneficiary });
+    // Extraer prefijo y número del RIF existente
+    const match = beneficiary.rif_ben.match(/^([VG])-?(.+)$/i);
+    if (match) {
+      setRifPrefix(match[1].toUpperCase() as "V" | "G");
+      setRifNum(match[2]);
+    } else {
+      setRifPrefix("V");
+      setRifNum(beneficiary.rif_ben);
+    }
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async () => {
     if (selectedBeneficiary) {
-      if (!formData.rif_ben || !formData.nom_ben || !formData.dir_ben) {
+      if (!rifNum || !formData.nom_ben || !formData.dir_ben) {
         alert("Por favor, llene todos los campos requeridos.");
         return;
       }
+      const rifCompleto = buildRif();
       try {
         const { rif_ben, ...data } = formData;
-        const response = await beneficiaryService.update(rif_ben, data);
+        const response = await beneficiaryService.update(rifCompleto, data);
         if (isApiError(response)) throw new Error(response.statusText);
         fetchBeneficiaries();
         setIsEditModalOpen(false);
@@ -160,5 +186,9 @@ export function useBeneficiaries() {
     openDeleteModal,
     handleDelete,
     handleFieldChange,
+    rifPrefix,
+    setRifPrefix,
+    rifNum,
+    setRifNum,
   };
 }

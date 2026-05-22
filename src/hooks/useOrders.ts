@@ -36,9 +36,29 @@ export const useOrders = () => {
             alert("El monto de la Orden de Pago debe ser mayor a cero.");
             return null;
         }
-        // Validar fecha decreto no mayor a fecha orden
-        if (formData.fdc_opg && formData.fec_opg && new Date(formData.fdc_opg) > new Date(formData.fec_opg)) {
-            alert("La fecha del decreto no puede ser posterior a la fecha de la Orden de Pago.");
+        // Validar fecha emisión no futura
+        if (formData.fec_opg && formData.fec_opg > new Date().toISOString().split('T')[0]) {
+            alert("La fecha de emisión no puede ser posterior a la fecha actual.");
+            return null;
+        }
+        // Validar fecha cobro no futura
+        if (formData.fco_opg && formData.fco_opg > new Date().toISOString().split('T')[0]) {
+            alert("La fecha de cobro no puede ser posterior a la fecha actual.");
+            return null;
+        }
+        // Validar fecha cobro no anterior a emisión
+        if (formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg) {
+            alert("La fecha de cobro no puede ser anterior a la fecha de emisión.");
+            return null;
+        }
+        // Validar fecha decreto no futura
+        if (formData.fdc_opg && formData.fdc_opg > new Date().toISOString().split('T')[0]) {
+            alert("La fecha de decreto no puede ser posterior a la fecha actual.");
+            return null;
+        }
+        // Validar fecha decreto no anterior a emisión
+        if (formData.fdc_opg && formData.fec_opg && formData.fdc_opg < formData.fec_opg) {
+            alert("La fecha del decreto no puede ser anterior a la fecha de la Orden de Pago.");
             return null;
         }
         setIsLoading(true);
@@ -70,9 +90,29 @@ export const useOrders = () => {
             alert("El monto de la Orden de Pago debe ser mayor a cero.");
             return false;
         }
-        // Validar fecha decreto no mayor a fecha orden
-        if (formData.fdc_opg && formData.fec_opg && new Date(formData.fdc_opg) > new Date(formData.fec_opg)) {
-            alert("La fecha del decreto no puede ser posterior a la fecha de la Orden de Pago.");
+        // Validar fecha emisión no futura
+        if (formData.fec_opg && formData.fec_opg > new Date().toISOString().split('T')[0]) {
+            alert("La fecha de emisión no puede ser posterior a la fecha actual.");
+            return false;
+        }
+        // Validar fecha cobro no futura
+        if (formData.fco_opg && formData.fco_opg > new Date().toISOString().split('T')[0]) {
+            alert("La fecha de cobro no puede ser posterior a la fecha actual.");
+            return false;
+        }
+        // Validar fecha cobro no anterior a emisión
+        if (formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg) {
+            alert("La fecha de cobro no puede ser anterior a la fecha de emisión.");
+            return false;
+        }
+        // Validar fecha decreto no futura
+        if (formData.fdc_opg && formData.fdc_opg > new Date().toISOString().split('T')[0]) {
+            alert("La fecha de decreto no puede ser posterior a la fecha actual.");
+            return false;
+        }
+        // Validar fecha decreto no anterior a emisión
+        if (formData.fdc_opg && formData.fec_opg && formData.fdc_opg < formData.fec_opg) {
+            alert("La fecha del decreto no puede ser anterior a la fecha de la Orden de Pago.");
             return false;
         }
         setIsLoading(true);

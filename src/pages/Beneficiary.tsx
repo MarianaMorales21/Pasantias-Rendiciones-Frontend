@@ -9,7 +9,9 @@ import Label from "../components/form/Label";
 import Badge from "../components/ui/badge/Badge";
 import { Modal } from "../components/ui/modal/index";
 import { useBeneficiaries } from "../hooks/useBeneficiaries";
+import { useStateData } from "../hooks/useStateData";
 import { BeneficiaryItem } from "../types/beneficiary";
+import { StateItem } from "../types/state";
 import {
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -17,33 +19,50 @@ import {
   TrashBinIcon,
 } from "../icons";
 
-// --- Mapeos de Estados ---
-const statesMap: Record<number, string> = {
-  1: "Activo",
-  2: "Inactivo",
-  3: "Pendiente",
-};
-
 // ─── Componente de formulario ───────────────────────
 interface BeneficiaryFormProps {
   formData: BeneficiaryItem;
   onChange: <K extends keyof BeneficiaryItem>(key: K, value: BeneficiaryItem[K]) => void;
   editMode?: boolean;
+  states: StateItem[];
+  rifPrefix: "V" | "G";
+  onRifPrefixChange: (prefix: "V" | "G") => void;
+  rifNum: string;
+  onRifNumChange: (num: string) => void;
 }
 
-function BeneficiaryForm({ formData, onChange, editMode = false }: BeneficiaryFormProps) {
+function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPrefix, onRifPrefixChange, rifNum, onRifNumChange }: BeneficiaryFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="f-rif">RIF / Cédula</Label>
-          <Input
-            id="f-rif"
-            placeholder="Ej: V-12345678"
-            value={formData.rif_ben}
-            onChange={(e) => onChange("rif_ben", e.target.value)}
-            disabled={editMode}
-          />
+          <Label htmlFor="f-rif-prefix">Tipo</Label>
+          <div className="flex gap-2">
+            <select
+              id="f-rif-prefix"
+              value={rifPrefix}
+              onChange={(e) => onRifPrefixChange(e.target.value as "V" | "G")}
+              disabled={editMode}
+              className="w-24 h-11 rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            >
+              <option value="V">V</option>
+              <option value="G">G</option>
+            </select>
+            <div className="flex-1">
+              <Input
+                id="f-rif"
+                placeholder={rifPrefix === "V" ? "Ej: 12345678" : "Ej: 12345678-1"}
+                value={rifNum}
+                onChange={(e) => onRifNumChange(e.target.value)}
+                disabled={editMode}
+              />
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-gray-400">
+            {rifPrefix === "V"
+              ? "Cédula de identidad (7-8 dígitos)"
+              : "RIF tipo G (número con guion antes del último dígito)"}
+          </p>
         </div>
         <div>
           <Label htmlFor="f-nombre">Nombre completo</Label>
@@ -73,9 +92,10 @@ function BeneficiaryForm({ formData, onChange, editMode = false }: BeneficiaryFo
             onChange={(e) => onChange("sta_ben", parseInt(e.target.value))}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           >
-            <option value={1}>Activo</option>
-            <option value={2}>Inactivo</option>
-            <option value={3}>Pendiente</option>
+            <option value={0}>Seleccione estado</option>
+            {states.map((s) => (
+              <option key={s.cod_sta} value={s.cod_sta}>{s.nom_sta}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -111,15 +131,22 @@ export default function Beneficiary() {
     openDeleteModal,
     handleDelete,
     handleFieldChange,
+    rifPrefix,
+    setRifPrefix,
+    rifNum,
+    setRifNum,
   } = useBeneficiaries();
 
-  const statusColor = (statusId: number) => {
-    const map: Record<number, "success" | "error" | "warning"> = {
-      1: "success", // Activo
-      2: "error",   // Inactivo
-      3: "warning", // Pendiente
-    };
-    return map[statusId] || "warning";
+  const { data: allStates } = useStateData();
+  const beneficiaryStates = allStates.filter(
+    (s) => s.nom_sta === "Activo" || s.nom_sta === "Suspendido" || s.nom_sta === "Inactivo"
+  );
+
+  const statusColor = (nom_sta: string | undefined) => {
+    if (nom_sta === "Activo") return "success";
+    if (nom_sta === "Inactivo") return "error";
+    if (nom_sta === "Suspendido") return "warning";
+    return "warning";
   };
 
   // --- Columnas ---
@@ -154,10 +181,10 @@ export default function Beneficiary() {
     },
     {
       header: "Estado",
-      key: "sta_ben",
+      key: "nom_sta",
       render: (item: BeneficiaryItem) => (
-        <Badge size="sm" color={statusColor(item.sta_ben)}>
-          {item.nom_sta || statesMap[item.sta_ben]}
+        <Badge size="sm" color={statusColor(item.nom_sta)}>
+          {item.nom_sta}
         </Badge>
       ),
     },
@@ -240,7 +267,7 @@ export default function Beneficiary() {
       {/* --- MODAL CREAR --- */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header>Nuevo Beneficiario</Modal.Header>
-        <BeneficiaryForm formData={formData} onChange={handleFieldChange} />
+        <BeneficiaryForm formData={formData} onChange={handleFieldChange} states={beneficiaryStates} rifPrefix={rifPrefix} onRifPrefixChange={setRifPrefix} rifNum={rifNum} onRifNumChange={setRifNum} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
             Cancelar
@@ -254,7 +281,7 @@ export default function Beneficiary() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Beneficiario</Modal.Header>
-        <BeneficiaryForm formData={formData} onChange={handleFieldChange} editMode />
+        <BeneficiaryForm formData={formData} onChange={handleFieldChange} editMode states={beneficiaryStates} rifPrefix={rifPrefix} onRifPrefixChange={setRifPrefix} rifNum={rifNum} onRifNumChange={setRifNum} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar

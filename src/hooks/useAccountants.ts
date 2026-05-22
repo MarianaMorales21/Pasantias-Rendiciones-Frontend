@@ -72,8 +72,12 @@ export function useAccountants() {
       alert("Por favor, llene todos los campos requeridos.");
       return;
     }
+    // Auto-prefix V- a la cédula si no lo tiene
+    const cedulaNormalizada = formData.ced_ctd.startsWith("V-")
+      ? formData.ced_ctd
+      : `V-${formData.ced_ctd.replace(/^V-?/i, "")}`;
     try {
-      const response = await accountantService.create(formData);
+      const response = await accountantService.create({ ...formData, ced_ctd: cedulaNormalizada });
       if (isApiError(response)) throw new Error(response.statusText);
       fetchAccountants();
       setIsCreateModalOpen(false);
@@ -97,7 +101,8 @@ export function useAccountants() {
       }
       try {
         const { ced_ctd, ...data } = formData;
-        const response = await accountantService.update(ced_ctd, data);
+        const cedulaNormalizada = ced_ctd.startsWith("V-") ? ced_ctd : `V-${ced_ctd.replace(/^V-?/i, "")}`;
+        const response = await accountantService.update(cedulaNormalizada, data);
         if (isApiError(response)) throw new Error(response.statusText);
         fetchAccountants();
         setIsEditModalOpen(false);

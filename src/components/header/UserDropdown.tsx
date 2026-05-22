@@ -22,7 +22,7 @@ export default function UserDropdown() {
     try {
       await logout();
       closeDropdown();
-      navigate("/signin");
+      navigate("/signin", { replace: true });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Error logout";
       console.error(msg);

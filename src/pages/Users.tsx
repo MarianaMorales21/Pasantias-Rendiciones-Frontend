@@ -9,7 +9,9 @@ import Label from "../components/form/Label";
 import Badge from "../components/ui/badge/Badge";
 import { Modal } from "../components/ui/modal/index";
 import { useUsers } from "../hooks/useUsers";
+import { useStateData } from "../hooks/useStateData";
 import { UserItem } from "../types/user";
+import { StateItem } from "../types/state";
 import {
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -17,17 +19,11 @@ import {
   TrashBinIcon,
 } from "../icons";
 
-// --- Mapeos de Roles y Estados ---
+// --- Mapeos de Roles ---
 const rolesMap: Record<number, string> = {
   1: "Administrador",
   2: "Coordinador",
   3: "Cuentadante",
-};
-
-const statesMap: Record<number, string> = {
-  1: "Activo",
-  2: "Inactivo",
-  3: "Pendiente",
 };
 
 // ─── Componente de formulario ────────────────────────────────────────────────
@@ -35,9 +31,10 @@ interface UserFormProps {
   formData: FormData;
   onChange: <K extends keyof FormData>(key: K, value: FormData[K]) => void;
   editMode?: boolean;
+  states: StateItem[];
 }
 
-function UserForm({ formData, onChange, editMode = false }: UserFormProps) {
+function UserForm({ formData, onChange, editMode = false, states }: UserFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -107,9 +104,10 @@ function UserForm({ formData, onChange, editMode = false }: UserFormProps) {
             onChange={(e) => onChange("sta_usu", parseInt(e.target.value))}
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           >
-            <option value={1}>Activo</option>
-            <option value={2}>Inactivo</option>
-            <option value={3}>Pendiente</option>
+            <option value={0}>Seleccione estado</option>
+            {states.map((s) => (
+              <option key={s.cod_sta} value={s.cod_sta}>{s.nom_sta}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -147,6 +145,11 @@ export default function Users() {
     handleFieldChange,
   } = useUsers();
 
+  const { data: allStates } = useStateData();
+  const userStates = allStates.filter(
+    (s) => s.nom_sta === "Activo" || s.nom_sta === "Suspendido" || s.nom_sta === "Inactivo"
+  );
+
   // --- Helpers ---
   const rolColor = (rolId: number) => {
     const map: Record<number, "primary" | "success" | "warning"> = {
@@ -157,13 +160,11 @@ export default function Users() {
     return map[rolId] || "primary";
   };
 
-  const statusColor = (statusId: number) => {
-    const map: Record<number, "success" | "error" | "warning"> = {
-      1: "success", // Activo
-      2: "error",   // Inactivo
-      3: "warning", // Pendiente
-    };
-    return map[statusId] || "warning";
+  const statusColor = (nom_sta: string | undefined) => {
+    if (nom_sta === "Activo") return "success";
+    if (nom_sta === "Inactivo") return "error";
+    if (nom_sta === "Suspendido") return "warning";
+    return "warning";
   };
 
   // --- Columnas ---
@@ -207,10 +208,10 @@ export default function Users() {
     },
     {
       header: "Estado",
-      key: "sta_usu",
+      key: "nom_sta",
       render: (item: UserItem) => (
-        <Badge size="sm" color={statusColor(item.sta_usu)}>
-          {item.nom_sta || statesMap[item.sta_usu]}
+        <Badge size="sm" color={statusColor(item.nom_sta)}>
+          {item.nom_sta}
         </Badge>
       ),
     },
@@ -294,7 +295,7 @@ export default function Users() {
       {/* --- MODAL CREAR --- */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header>Nuevo Usuario</Modal.Header>
-        <UserForm formData={formData} onChange={handleFieldChange} />
+        <UserForm formData={formData} onChange={handleFieldChange} states={userStates} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
             Cancelar
@@ -308,7 +309,7 @@ export default function Users() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Usuario</Modal.Header>
-        <UserForm formData={formData} onChange={handleFieldChange} editMode />
+        <UserForm formData={formData} onChange={handleFieldChange} editMode states={userStates} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar

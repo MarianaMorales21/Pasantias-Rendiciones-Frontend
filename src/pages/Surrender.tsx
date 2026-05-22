@@ -18,10 +18,21 @@ import { OrderItem } from "../types/orders";
 
 // ─── Formulario: Rendición (Cabecera) ─────────────────────────────────────────
 function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
-  const { rndFormData, setRndFormData, orders, states } = hook;
+  const { rndFormData, setRndFormData, orders, states: hookStates, renditions } = hook;
+  const rndStates = hookStates.filter(
+    (s) => s.nom_sta === "Activo" || s.nom_sta === "Inactivo"
+  );
 
   const onChange = <K extends keyof SurrenderItem>(field: K, value: SurrenderItem[K]) =>
     setRndFormData({ ...rndFormData, [field]: value });
+
+  // Bloquear reintegro si es la primera rendición de la OPG (solo al crear)
+  const selectedRndForFilter = (hook as any).selectedRnd;
+  const existingRenditionsForOpg = renditions.filter(r =>
+    r.opg_rnd === rndFormData.opg_rnd &&
+    (!selectedRndForFilter || r.cod_rnd !== selectedRndForFilter.cod_rnd)
+  );
+  const isFirstRendition = !selectedRndForFilter && rndFormData.opg_rnd > 0 && existingRenditionsForOpg.length === 0;
 
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto">
@@ -69,7 +80,14 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
             onChange={(e) => {
               const val = e.target.value;
               onChange("rnt_rnd", val === "" ? null : val);
-            }} />
+            }}
+            disabled={isFirstRendition}
+            className={isFirstRendition ? "opacity-50 cursor-not-allowed" : ""} />
+          {isFirstRendition && (
+            <p className="text-xs text-yellow-500 mt-1 font-medium">
+              La primera rendición de una OPG no puede tener reintegro.
+            </p>
+          )}
         </div>
       </div>
       <div>
@@ -78,7 +96,7 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
           onChange={(e) => onChange("sta_rnd", parseInt(e.target.value) || 0)}
           className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
           <option value={0}>Seleccione estado</option>
-          {states.map((s) => (
+          {rndStates.map((s) => (
             <option key={s.cod_sta} value={s.cod_sta}>{s.nom_sta}</option>
           ))}
         </select>
@@ -96,29 +114,38 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   const detailsSum = details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0);
 
   const bankOptions = [
-    "BANCO DE VENEZUELA",
-    "BANESCO",
-    "BANCO MERCANTIL",
-    "BANCO PROVINCIAL",
-    "BANCO NACIONAL DE CRÉDITO (BNC)",
-    "BANCARIBE",
-    "BANCO EXTERIOR",
-    "BANPLUS",
-    "BANCO DEL TESORO",
-    "BANCO BICENTENARIO",
-    "BANCO CARONÍ",
-    "BANCO VENEZOLANO DE CRÉDITO",
-    "100% BANCO",
-    "DEL SUR",
-    "BANCO PLAZA",
-    "BANCO ACTIVO"
+    "BANCO DE VENEZUELA", "BANESCO", "BANCO MERCANTIL", "BANCO PROVINCIAL",
+    "BANCO NACIONAL DE CRÉDITO (BNC)", "BANCARIBE", "BANCO EXTERIOR", "BANPLUS",
+    "BANCO DEL TESORO", "BANCO BICENTENARIO", "BANCO CARONÍ",
+    "BANCO VENEZOLANO DE CRÉDITO", "100% BANCO", "DEL SUR", "BANCO PLAZA", "BANCO ACTIVO"
   ];
   if (ndbFormData.ban_ndb && !bankOptions.includes(ndbFormData.ban_ndb)) {
     bankOptions.push(ndbFormData.ban_ndb);
   }
 
+  // Cálculos de retenciones
+  const sumRetenciones = (ndbFormData.rtc_ndb || 0) + (ndbFormData.tbf_ndb || 0) + (ndbFormData.isl_ndb || 0);
+  const monOpgActual = Number(selectedOpg?.mon_opg || 0);
+
+  const retencionesInvalidas = ndbFormData.has_retention && (
+    Number(ndbFormData.rtc_ndb || 0) >= monOpgActual ||
+    Number(ndbFormData.tbf_ndb || 0) >= monOpgActual ||
+    Number(ndbFormData.isl_ndb || 0) >= monOpgActual
+  );
+  const subtotalValido = ndbFormData.has_retention
+    ? (ndbFormData.sub_ndb || 0) >= sumRetenciones
+    : true;
+
+  // Si hay retenciones, mon_ndb = subtotal - (IVA + Timbre + ISLR)
+  const monNdbCalculado = ndbFormData.has_retention
+    ? Math.round(((ndbFormData.sub_ndb || 0) - sumRetenciones) * 100) / 100
+    : ndbFormData.mon_ndb;
+
+  // Para validar contra OPG, usar mon_ndb (el subtotal solo aplica para detalles)
+  const montoARendir = ndbFormData.mon_ndb || 0;
+
   const { remaining, excess } = validateDebitNoteAmount(
-    ndbFormData.mon_ndb,
+    montoARendir,
     selectedOpg,
     selectedRnd,
     opgDebitNotes,
@@ -132,7 +159,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="ndb-num">Nro. Nota de Débito</Label>
-          <Input id="ndb-num" placeholder="Ej: ND-1234" value={ndbFormData.num_ndb}
+          <Input id="ndb-num" placeholder="Ej: 1234 (se agregará ND- automáticamente)" value={ndbFormData.num_ndb}
             onChange={(e) => onChange("num_ndb", e.target.value)} />
         </div>
         <div>
@@ -203,51 +230,131 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
       </div>
 
       {ndbFormData.has_retention && (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="ndb-rtc">Retención IVA (Bs.)</Label>
-            <Input id="ndb-rtc" type="number" step={0.01} value={ndbFormData.rtc_ndb || ""}
-              onChange={(e) => onChange("rtc_ndb", parseFloat(e.target.value) || 0)} />
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="ndb-rtc">Retención IVA (Bs.)</Label>
+              <Input
+                id="ndb-rtc"
+                type="number"
+                step={0.01}
+                value={ndbFormData.rtc_ndb || ""}
+                onChange={(e) => onChange("rtc_ndb", parseFloat(e.target.value) || 0)}
+                className={(ndbFormData.rtc_ndb || 0) >= monOpgActual || Number(ndbFormData.rtc_ndb || 0) > Number(ndbFormData.sub_ndb || 0) ? "border-red-500" : ""}
+              />
+              {(ndbFormData.rtc_ndb || 0) >= monOpgActual && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  No puede igualar o superar el monto de la OPG (Bs. {monOpgActual.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+                </p>
+              )}
+              {Number(ndbFormData.rtc_ndb || 0) > Number(ndbFormData.sub_ndb || 0) && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  No puede superar el subtotal (Bs. {Number(ndbFormData.sub_ndb || 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="ndb-tbf">Timbre Fiscal (Bs.)</Label>
+              <Input
+                id="ndb-tbf"
+                type="number"
+                step={0.01}
+                value={ndbFormData.tbf_ndb || ""}
+                onChange={(e) => onChange("tbf_ndb", parseFloat(e.target.value) || 0)}
+                className={(ndbFormData.tbf_ndb || 0) >= monOpgActual || Number(ndbFormData.tbf_ndb || 0) > Number(ndbFormData.sub_ndb || 0) ? "border-red-500" : ""}
+              />
+              {(ndbFormData.tbf_ndb || 0) >= monOpgActual && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  No puede igualar o superar el monto de la OPG (Bs. {monOpgActual.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+                </p>
+              )}
+              {Number(ndbFormData.tbf_ndb || 0) > Number(ndbFormData.sub_ndb || 0) && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  No puede superar el subtotal (Bs. {Number(ndbFormData.sub_ndb || 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="ndb-isl">ISLR (Bs.)</Label>
+              <Input
+                id="ndb-isl"
+                type="number"
+                step={0.01}
+                value={ndbFormData.isl_ndb || ""}
+                onChange={(e) => onChange("isl_ndb", parseFloat(e.target.value) || 0)}
+                className={(ndbFormData.isl_ndb || 0) >= monOpgActual || Number(ndbFormData.isl_ndb || 0) > Number(ndbFormData.sub_ndb || 0) ? "border-red-500" : ""}
+              />
+              {(ndbFormData.isl_ndb || 0) >= monOpgActual && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  No puede igualar o superar el monto de la OPG (Bs. {monOpgActual.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+                </p>
+              )}
+              {Number(ndbFormData.isl_ndb || 0) > Number(ndbFormData.sub_ndb || 0) && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  No puede superar el subtotal (Bs. {Number(ndbFormData.sub_ndb || 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="ndb-sub">Subtotal (Bs.)</Label>
+              <Input
+                id="ndb-sub"
+                type="number"
+                step={0.01}
+                value={ndbFormData.sub_ndb || ""}
+                onChange={(e) => onChange("sub_ndb", parseFloat(e.target.value) || 0)}
+                className={!subtotalValido ? "border-red-500" : ""}
+              />
+              {!subtotalValido && (
+                <p className="text-xs text-red-500 mt-1 font-medium">
+                  El subtotal no puede ser menor a la suma de las retenciones.
+                </p>
+              )}
+            </div>
           </div>
           <div>
-            <Label htmlFor="ndb-tbf">Timbre Fiscal (Bs.)</Label>
-            <Input id="ndb-tbf" type="number" step={0.01} value={ndbFormData.tbf_ndb || ""}
-              onChange={(e) => onChange("tbf_ndb", parseFloat(e.target.value) || 0)} />
+            <Label htmlFor="ndb-mon-auto">Monto Total (Bs.)</Label>
+            <Input
+              id="ndb-mon-auto"
+              type="number"
+              step={0.01}
+              value={monNdbCalculado || ""}
+              disabled
+              className={(!subtotalValido || retencionesInvalidas) ? "border-red-500" : ""}
+            />
+            {retencionesInvalidas && (
+              <p className="text-xs text-red-500 mt-1 font-medium">
+                Una o más retenciones superan el monto de la OPG.
+              </p>
+            )}
           </div>
-          <div>
-            <Label htmlFor="ndb-isl">ISLR (Bs.)</Label>
-            <Input id="ndb-isl" type="number" step={0.01} value={ndbFormData.isl_ndb || ""}
-              onChange={(e) => onChange("isl_ndb", parseFloat(e.target.value) || 0)} />
-          </div>
-          <div>
-            <Label htmlFor="ndb-sub">Subtotal (Bs.)</Label>
-            <Input id="ndb-sub" type="number" step={0.01} value={ndbFormData.sub_ndb || ""}
-              onChange={(e) => onChange("sub_ndb", parseFloat(e.target.value) || 0)} />
-          </div>
+        </>
+      )}
+
+      {!ndbFormData.has_retention && (
+        <div>
+          <Label htmlFor="ndb-mon">Monto Total (Bs.)</Label>
+          <Input
+            id="ndb-mon"
+            type="number"
+            step={0.01}
+            value={ndbFormData.mon_ndb || ""}
+            onChange={(e) => onChange("mon_ndb", parseFloat(e.target.value) || 0)}
+            disabled={false}
+            className={excess ? "border-red-500" : ""}
+          />
+          {isLocked && (
+            <p className="text-xs text-gray-500 mt-1 font-medium">
+              Como la nota ya tiene detalles, el nuevo monto no puede ser menor a la suma de sus detalles (Bs. {detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+            </p>
+          )}
+          {excess && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              !Atencion! Solo quedan Bs. {remaining.toLocaleString("es-VE")} Disponibles.
+            </p>
+          )}
         </div>
       )}
-      <div>
-        <Label htmlFor="ndb-mon">Monto Total (Bs.)</Label>
-        <Input
-          id="ndb-mon"
-          type="number"
-          step={0.01}
-          value={ndbFormData.mon_ndb || ""}
-          onChange={(e) => onChange("mon_ndb", parseFloat(e.target.value) || 0)}
-          disabled={false}
-          className={excess ? "border-red-500" : ""}
-        />
-        {isLocked && (
-          <p className="text-xs text-gray-500 mt-1 font-medium">
-            Como la nota ya tiene detalles, el nuevo monto no puede ser menor a la suma de sus detalles (Bs. {detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
-          </p>
-        )}
-        {excess && (
-          <p className="text-xs text-red-500 mt-1 font-medium">
-            !Atencion! Solo quedan Bs. {remaining.toLocaleString("es-VE")} Disponibles.
-          </p>
-        )}
-      </div>
       <div>
         <Label htmlFor="ndb-con">Concepto</Label>
         <textarea id="ndb-con" rows={2}
@@ -334,7 +441,9 @@ export default function Surrender() {
     return Array.from(yearsSet).sort((a, b) => b - a);
   }, [orders]);
 
-  const totalSpent = opgDebitNotes.reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
+  const totalSpent = opgDebitNotes.reduce((acc, curr) => {
+    return acc + Number(curr.mon_ndb || 0);
+  }, 0);
   const totalReintegros = renditions.reduce((acc, curr) => acc + Number(curr.rnt_rnd || 0), 0);
   const netSpent = totalSpent - totalReintegros;
   const isOpgFullyRendered = selectedOpg ? netSpent >= Number(selectedOpg.mon_opg) : false;
@@ -413,7 +522,14 @@ export default function Surrender() {
       header: "Acciones", key: "actions",
       render: (item: DebitNoteItem) => (
         <div className="flex gap-1">
-          <button onClick={() => { setSelectedNdb(item); setNdbFormData(item); setIsNdbEditOpen(true); }} className="p-1 text-gray-500 hover:text-blue-500"><PencilIcon className="size-4" /></button>
+          <button onClick={() => {
+            setSelectedNdb(item);
+            setNdbFormData({
+              ...item,
+              has_retention: Number(item.sub_ndb) > 0 || Number(item.rtc_ndb) > 0 || Number(item.tbf_ndb) > 0 || Number(item.isl_ndb) > 0
+            });
+            setIsNdbEditOpen(true);
+          }} className="p-1 text-gray-500 hover:text-blue-500"><PencilIcon className="size-4" /></button>
           <button onClick={() => { setSelectedNdb(item); setIsNdbDeleteOpen(true); }} className="p-1 text-gray-500 hover:text-red-500"><TrashBinIcon className="size-4" /></button>
           <button onClick={() => setSelectedNdb(item)} className={`p-1 ${selectedNdb?.cod_ndb === item.cod_ndb ? "text-blue-600" : "text-gray-400"}`}><AngleRightIcon className="size-4" /></button>
         </div>
@@ -559,11 +675,11 @@ export default function Surrender() {
             <ComponentCard title={`Rendiciones`}>
               <div className="mb-4">
                 {/* Ícono PlusIcon ajustado */}
-                  <Button size="md"
-                    variant="primary"
-                    className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
-                    startIcon={<PlusIcon style={{ width: '16px', height: '16px', display: 'block' }}
-                      className="text-white fill-current" />} onClick={() => handleCreateClick('rnd')}>Nueva Rendición</Button>
+                <Button size="md"
+                  variant="primary"
+                  className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
+                  startIcon={<PlusIcon style={{ width: '16px', height: '16px', display: 'block' }}
+                    className="text-white fill-current" />} onClick={() => handleCreateClick('rnd')}>Nueva Rendición</Button>
               </div>
               <DataTable columns={rndColumns} data={renditions} emptyMessage="No hay rendiciones registradas para esta orden de pago." />
             </ComponentCard>

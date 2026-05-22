@@ -51,6 +51,13 @@ const emptyForm: OrderFormData = {
 
 // ─── Componente de formulario ────────────────────────────────────────────────
 function OrderForm({ formData, onChange, cuentadantes, states, partidas }: OrderFormProps) {
+  const today = new Date().toISOString().split("T")[0];
+  const futureDateEmision = formData.fec_opg && formData.fec_opg > today;
+  const futureDateCobro = formData.fco_opg && formData.fco_opg > today;
+  const futureDateDecreto = formData.fdc_opg && formData.fdc_opg > today;
+  const cobroAntesDeEmision = formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg;
+  const decretoAntesDeEmision = formData.fdc_opg && formData.fec_opg && formData.fdc_opg < formData.fec_opg;
+
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar p-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -100,7 +107,13 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             type="date"
             value={formData.fec_opg ? formData.fec_opg.split('T')[0] : ""}
             onChange={(e) => onChange("fec_opg", e.target.value)}
+            className={futureDateEmision ? "border-red-500" : ""}
           />
+          {futureDateEmision && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              La fecha de emisión no puede ser posterior a hoy.
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-fco">Fecha Cobro (Opcional)</Label>
@@ -109,7 +122,18 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             type="date"
             value={formData.fco_opg ? formData.fco_opg.split('T')[0] : ""}
             onChange={(e) => onChange("fco_opg", e.target.value)}
+            className={futureDateCobro || cobroAntesDeEmision ? "border-red-500" : ""}
           />
+          {futureDateCobro && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              La fecha de cobro no puede ser posterior a hoy.
+            </p>
+          )}
+          {cobroAntesDeEmision && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              La fecha de cobro no puede ser anterior a la fecha de emisión.
+            </p>
+          )}
         </div>
 
         <div>
@@ -119,7 +143,18 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             type="date"
             value={formData.fdc_opg ? formData.fdc_opg.split('T')[0] : ""}
             onChange={(e) => onChange("fdc_opg", e.target.value)}
+            className={futureDateDecreto || decretoAntesDeEmision ? "border-red-500" : ""}
           />
+          {futureDateDecreto && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              La fecha de decreto no puede ser posterior a hoy.
+            </p>
+          )}
+          {decretoAntesDeEmision && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              La fecha de decreto no puede ser anterior a la fecha de emisión.
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-dcr">Nro. Decreto</Label>
@@ -184,7 +219,10 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
 export default function Order() {
   const { data: orders, isLoading, handleCreate: apiCreateOrder, handleUpdate: apiUpdateOrder, handleDelete: apiDeleteOrder } = useOrders();
   const { accountantData } = useAccountants();
-  const { data: states } = useStateData();
+  const { data: allStates } = useStateData();
+  const states = allStates.filter(
+    (s) => s.nom_sta === "Pagado" || s.nom_sta === "Pendiente"
+  );
   const { departures: partidas } = useDepartures();
 
   const [search, setSearch] = useState("");

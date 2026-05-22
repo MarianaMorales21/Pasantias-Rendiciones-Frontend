@@ -19,10 +19,11 @@ export const validateDetailAmount = (
     const baseAmount = hasRetention ? Number(selectedNdb.sub_ndb) : Number(selectedNdb.mon_ndb);
     const remaining = baseAmount - totalSpent;
 
+    const round2 = (n: number) => Math.round(n * 100) / 100;
     return {
-        valid: newAmount <= remaining,
+        valid: round2(newAmount) <= round2(remaining),
         remaining: Math.max(0, remaining),
-        excess: newAmount > remaining
+        excess: round2(newAmount) > round2(remaining)
     }
 }
 
@@ -45,7 +46,7 @@ export const validateDebitNoteAmount = (
     // Rendiciones anteriores
     const previousRndIds = new Set(sortedRnds.slice(0, sliceIndex).map(r => r.cod_rnd));
 
-    // Monto rendido en rendiciones anteriores
+    // Monto rendido en rendiciones anteriores (siempre mon_ndb)
     const previousSpent = allDebitNotes
         .filter((note) => previousRndIds.has(note.rnd_ndb))
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
@@ -67,10 +68,11 @@ export const validateDebitNoteAmount = (
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
 
     const remaining = maxAvailable - currentSpent;
+    const round2 = (n: number) => Math.round(n * 100) / 100;
 
     return {
-        valid: newAmount <= remaining,
+        valid: round2(newAmount) <= round2(remaining),
         remaining: Math.max(0, remaining),
-        excess: newAmount > remaining
+        excess: round2(newAmount) > round2(remaining)
     };
 };

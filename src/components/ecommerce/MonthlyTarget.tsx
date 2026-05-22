@@ -19,7 +19,7 @@ export default function RendicionTargetCard({ summary }: MonthlyTargetProps) {
   // Valores predeterminados si no hay resumen
   const montoAsignado = summary?.monto_inicial || 0;
   const montoRendido = summary?.total_ejecutado || 0;
-  const montoPendiente = summary?.saldo_disponible || 0;
+  const montoPendiente = Math.max(0, summary?.saldo_disponible || 0);
 
   // Lógica de Cálculos
   const porcentajeRendido = montoAsignado > 0 
