@@ -18,7 +18,7 @@ import { OrderItem } from "../types/orders";
 
 // ─── Formulario: Rendición (Cabecera) ─────────────────────────────────────────
 function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
-  const { rndFormData, setRndFormData, orders, states: hookStates, renditions } = hook;
+  const { rndFormData, setRndFormData, orders, states: hookStates, renditions, fieldErrors } = hook;
   const rndStates = hookStates.filter(
     (s) => s.nom_sta === "Activo" || s.nom_sta === "Inactivo"
   );
@@ -42,13 +42,15 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <div>
           <Label htmlFor="rnd-num">Nro. Rendición</Label>
           <Input id="rnd-num" placeholder="Ej: 001" value={rndFormData.num_rnd}
-            onChange={(e) => onChange("num_rnd", e.target.value)} />
+            onChange={(e) => onChange("num_rnd", e.target.value)}
+            className={fieldErrors?.rnd_num_rnd ? "border-red-500" : ""} />
+          {fieldErrors?.rnd_num_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
         <div>
           <Label htmlFor="rnd-opg">Orden de Pago (OPG)</Label>
           <select id="rnd-opg" value={rndFormData.opg_rnd}
             onChange={(e) => onChange("opg_rnd", parseInt(e.target.value) || 0)}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.rnd_opg_rnd ? "border-red-500" : "border-gray-300"}`}>
             <option value={0}>Seleccione OPG</option>
             {orders.map((o) => (
               <option key={o.cod_opg} value={o.cod_opg}>
@@ -56,18 +58,23 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               </option>
             ))}
           </select>
+          {fieldErrors?.rnd_opg_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="rnd-fec">Fecha Rendición</Label>
           <Input id="rnd-fec" type="date" value={rndFormData.fec_rnd?.split("T")[0] || ""}
-            onChange={(e) => onChange("fec_rnd", e.target.value)} />
+            onChange={(e) => onChange("fec_rnd", e.target.value)}
+            className={fieldErrors?.rnd_fec_rnd ? "border-red-500" : ""} />
+          {fieldErrors?.rnd_fec_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
         <div>
           <Label htmlFor="rnd-prd">Periodo</Label>
           <Input id="rnd-prd" placeholder="Ej: MARZO 2024" value={rndFormData.prd_rnd}
-            onChange={(e) => onChange("prd_rnd", e.target.value)} />
+            onChange={(e) => onChange("prd_rnd", e.target.value)}
+            className={fieldErrors?.rnd_prd_rnd ? "border-red-500" : ""} />
+          {fieldErrors?.rnd_prd_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -109,11 +116,9 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
 
 // ─── Formulario: Nota de Débito ───────────────────────────────────────────────
 function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
-  const { ndbFormData, setNdbFormData, beneficiaries, programs, selectedOpg, selectedRnd, selectedNdb, opgDebitNotes, details } = hook;
+  const { ndbFormData, setNdbFormData, beneficiaries, programs, selectedOpg, selectedRnd, selectedNdb, opgDebitNotes, fieldErrors } = hook;
   const onChange = (field: keyof typeof ndbFormData, value: string | number) =>
     setNdbFormData({ ...ndbFormData, [field]: value });
-
-  const detailsSum = details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0);
 
   const bankOptions = [
     "BANCO DE VENEZUELA", "BANESCO", "BANCO MERCANTIL", "BANCO PROVINCIAL",
@@ -147,8 +152,8 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
     ? Math.round(((ndbFormData.sub_ndb || 0) - sumRetenciones) * 100) / 100
     : ndbFormData.mon_ndb;
 
-  // Para validar contra OPG, usar mon_ndb (el subtotal solo aplica para detalles)
-  const montoARendir = ndbFormData.mon_ndb || 0;
+  // Para validar contra OPG, usar el monto efectivo
+  const montoARendir = monNdbCalculado;
 
   const { remaining, excess } = validateDebitNoteAmount(
     montoARendir,
@@ -158,7 +163,6 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
     hook.renditions,
     selectedNdb?.cod_ndb
   );
-  const isLocked = (hook.details?.length ?? 0) > 0;
 
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto">
@@ -166,52 +170,61 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <div>
           <Label htmlFor="ndb-num">Nro. Nota de Débito</Label>
           <Input id="ndb-num" placeholder="Ej: 1234 (se agregará ND- automáticamente)" value={ndbFormData.num_ndb}
-            onChange={(e) => onChange("num_ndb", e.target.value)} />
+            onChange={(e) => onChange("num_ndb", e.target.value)}
+            className={fieldErrors?.ndb_num_ndb ? "border-red-500" : ""} />
+          {fieldErrors?.ndb_num_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
         <div>
           <Label htmlFor="ndb-fec">Fecha</Label>
           <Input id="ndb-fec" type="date" value={ndbFormData.fec_ndb?.split("T")[0] || ""}
-            onChange={(e) => onChange("fec_ndb", e.target.value)} />
+            onChange={(e) => onChange("fec_ndb", e.target.value)}
+            className={fieldErrors?.ndb_fec_ndb ? "border-red-500" : ""} />
+          {fieldErrors?.ndb_fec_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
       </div>
       <div>
         <Label htmlFor="ndb-ben">Beneficiario</Label>
         <select id="ndb-ben" value={ndbFormData.rif_ndb}
           onChange={(e) => onChange("rif_ndb", e.target.value)}
-          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+          className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.ndb_rif_ndb ? "border-red-500" : "border-gray-300"}`}>
           <option value="">Seleccione beneficiario</option>
           {beneficiaries.map((b) => (
             <option key={b.rif_ben} value={b.rif_ben}>{b.rif_ben} — {b.nom_ben}</option>
           ))}
         </select>
+        {fieldErrors?.ndb_rif_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
       </div>
       <div>
         <Label htmlFor="ndb-pro">Programa</Label>
         <select id="ndb-pro" value={ndbFormData.pro_ndb}
           onChange={(e) => onChange("pro_ndb", e.target.value)}
-          className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+          className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.ndb_pro_ndb ? "border-red-500" : "border-gray-300"}`}>
           <option value="">Seleccione programa</option>
           {programs.map((pro) => (
             <option key={pro.cod_pro} value={pro.cod_pro}>{pro.nom_pro}</option>
           ))}
         </select>
+        {fieldErrors?.ndb_pro_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="ndb-ban">Banco</Label>
           <select id="ndb-ban" value={ndbFormData.ban_ndb}
             onChange={(e) => onChange("ban_ndb", e.target.value)}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.ndb_ban_ndb ? "border-red-500" : "border-gray-300"}`}>
             <option value="">Seleccione banco</option>
             {bankOptions.map((b) => (
               <option key={b} value={b}>{b}</option>
             ))}
           </select>
+          {fieldErrors?.ndb_ban_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
         <div>
           <Label htmlFor="ndb-ref">Referencia</Label>
           <Input id="ndb-ref" placeholder="Ej: 98765432" value={ndbFormData.ref_ndb}
-            onChange={(e) => onChange("ref_ndb", e.target.value)} />
+            onChange={(e) => onChange("ref_ndb", e.target.value)}
+            className={fieldErrors?.ndb_ref_ndb ? "border-red-500" : ""} />
+          {fieldErrors?.ndb_ref_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
       </div>
 
@@ -331,12 +344,15 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               step={0.01}
               value={monNdbCalculado || ""}
               disabled
-              className={`cursor-not-allowed bg-gray-100 dark:bg-gray-700 ${(!subtotalValido || retencionesInvalidas) ? "border-red-500" : ""}`}
+              className={`cursor-not-allowed bg-gray-100 dark:bg-gray-700 ${(!subtotalValido || retencionesInvalidas || fieldErrors?.ndb_mon_ndb) ? "border-red-500" : ""}`}
             />
             {retencionesInvalidas && (
               <p className="text-xs text-red-500 mt-1 font-medium">
                 Una o más retenciones superan el monto de la OPG.
               </p>
+            )}
+            {fieldErrors?.ndb_mon_ndb && (
+              <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
             )}
           </div>
         </>
@@ -352,25 +368,24 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
             value={ndbFormData.mon_ndb || ""}
             onChange={(e) => onChange("mon_ndb", parseFloat(e.target.value) || 0)}
             disabled={false}
-            className={excess ? "border-red-500" : ""}
+            className={`${excess ? "border-red-500" : ""} ${fieldErrors?.ndb_mon_ndb ? "border-red-500" : ""}`}
           />
-          {isLocked && (
-            <p className="text-xs text-gray-500 mt-1 font-medium">
-              Como la nota ya tiene detalles, el nuevo monto no puede ser menor a la suma de sus detalles (Bs. {detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
-            </p>
-          )}
           {excess && (
             <p className="text-xs text-red-500 mt-1 font-medium">
               !Atencion! Solo quedan Bs. {remaining.toLocaleString("es-VE")} Disponibles.
             </p>
+          )}
+          {fieldErrors?.ndb_mon_ndb && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}
         </div>
       )}
       <div>
         <Label htmlFor="ndb-con">Concepto</Label>
         <textarea id="ndb-con" rows={2}
-          className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+          className={`w-full rounded-lg border bg-transparent px-4 py-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.ndb_con_ndb ? "border-red-500" : "border-gray-300"}`}
           value={ndbFormData.con_ndb} onChange={(e) => onChange("con_ndb", e.target.value)} />
+        {fieldErrors?.ndb_con_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
       </div>
     </Modal.Body>
   );
@@ -378,7 +393,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
 
 // ─── Formulario: Detalles de Nota de Débito ───────────────────────────────────
 function DrnForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
-  const { drnFormData, setDrnFormData, partidas, details, selectedNdb } = hook;
+  const { drnFormData, setDrnFormData, partidas, details, selectedNdb, fieldErrors } = hook;
   const onChange = (field: keyof typeof drnFormData, value: string | number | null) =>
     setDrnFormData({ ...drnFormData, [field]: value });
 
@@ -404,12 +419,15 @@ function DrnForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <Label htmlFor="drn-mon">Monto del Detalle (Bs.)</Label>
         <Input id="drn-mon" type="number" step={0.01} value={drnFormData.mon_drn || ""}
           onChange={(e) => setDrnFormData({ ...drnFormData, mon_drn: parseFloat(e.target.value) || 0 })}
-          className={excess ? "border-red-500" : ""}
+          className={`${excess ? "border-red-500" : ""} ${fieldErrors?.drn_mon_drn ? "border-red-500" : ""}`}
         />
         {excess && (
           <p className="text-xs text-red-500 mt-1 font-medium">
             !Atencion! Solo quedan Bs. {remaining.toLocaleString("es-VE")} Disponibles.
           </p>
+        )}
+        {fieldErrors?.drn_mon_drn && (
+          <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
         )}
       </div>
       <div>
@@ -437,6 +455,7 @@ export default function Surrender() {
     handleNdbCreate, handleNdbUpdate, handleNdbDelete, setNdbFormData,
     isDrnCreateOpen, setIsDrnCreateOpen, isDrnEditOpen, setIsDrnEditOpen, isDrnDeleteOpen, setIsDrnDeleteOpen,
     handleDrnCreate, handleDrnUpdate, handleDrnDelete, setDrnFormData, setSelectedDrn,
+    clearFieldErrors,
     warningMessage, isWarningOpen, setIsWarningOpen
   } = hook;
 
@@ -460,6 +479,7 @@ export default function Surrender() {
   const isOpgFullyRendered = selectedOpg ? netSpent >= Number(selectedOpg.mon_opg) : false;
 
   const handleCreateClick = (type: 'rnd' | 'ndb' | 'drn') => {
+    clearFieldErrors();
     // Siempre permitir agregar detalles aunque la OPG esté completamente rendida,
     // porque la nota de débito ya existe y su monto ya fue contabilizado.
     // Lo que importa es que la nota de débito tenga detalles reales de gasto.
@@ -503,7 +523,7 @@ export default function Surrender() {
       header: "Acciones", key: "actions",
       render: (item: SurrenderItem) => (
         <div className="flex gap-1">
-          <button onClick={() => { setSelectedRnd(item); setRndFormData(item); setIsRndEditOpen(true); }} className="p-1 text-gray-500 hover:text-blue-500"><PencilIcon className="size-4" /></button>
+          <button onClick={() => { clearFieldErrors(); setSelectedRnd(item); setRndFormData(item); setIsRndEditOpen(true); }} className="p-1 text-gray-500 hover:text-blue-500"><PencilIcon className="size-4" /></button>
           <button onClick={() => { setSelectedRnd(item); setIsRndDeleteOpen(true); }} className="p-1 text-gray-500 hover:text-red-500"><TrashBinIcon className="size-4" /></button>
           <button onClick={() => setSelectedRnd(item)} className={`p-1 ${selectedRnd?.cod_rnd === item.cod_rnd ? "text-blue-600" : "text-gray-400"}`}><AngleRightIcon className="size-4" /></button>
         </div>
@@ -535,6 +555,7 @@ export default function Surrender() {
       render: (item: DebitNoteItem) => (
         <div className="flex gap-1">
           <button onClick={() => {
+            clearFieldErrors();
             setSelectedNdb(item);
             setNdbFormData({
               ...item,
@@ -562,6 +583,7 @@ export default function Surrender() {
         <div className="flex gap-1">
           <button
             onClick={() => {
+              clearFieldErrors();
               setSelectedDrn(item);   // ← Agregar
               setDrnFormData(item);
               setIsDrnEditOpen(true);

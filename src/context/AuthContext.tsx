@@ -12,6 +12,7 @@ interface AuthContextType {
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   verifySession: () => Promise<void>;
+  forgotPasswordByCedula: (ced_usu: string) => Promise<{ message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,6 +82,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await logout();
   };
 
+  const forgotPasswordByCedula = async (ced_usu: string): Promise<{ message: string }> => {
+    const response = await api.post(`${API_BASE_URL}/auth/forgot-password-by-cedula`, {
+      body: { ced_usu },
+      timeout: 30000,
+    }) as ApiResponse<{ message: string }>;
+
+    if (isApiError(response)) {
+      throw new Error(response.statusText || "Error al recuperar contraseña");
+    }
+
+    return response;
+  };
+
   const logout = async () => {
     setLoading(true);
     try {
@@ -115,7 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, authenticated, login, register, changePassword, logout, verifySession }}>
+    <AuthContext.Provider value={{ user, loading, authenticated, login, register, changePassword, forgotPasswordByCedula, logout, verifySession }}>
       {children}
     </AuthContext.Provider>
   );

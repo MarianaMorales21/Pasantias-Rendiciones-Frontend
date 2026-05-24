@@ -1,4 +1,4 @@
-import { useRef, useEffect, ReactNode } from "react";
+import { useEffect, ReactNode } from "react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -9,7 +9,6 @@ interface ModalProps {
   isFullscreen?: boolean;
 }
 
-// 1. Definimos los sub-componentes para organizar el layout
 const ModalHeader = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
   <div className={`px-6 py-4 border-b border-gray-100 dark:border-gray-800 ${className}`}>
     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{children}</h3>
@@ -34,16 +33,6 @@ export const Modal = ({
   showCloseButton = true,
   isFullscreen = false,
 }: ModalProps) => {
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  // Manejo de tecla Escape
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    if (isOpen) document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose]);
 
   // Bloqueo de scroll
   useEffect(() => {
@@ -59,17 +48,12 @@ export const Modal = ({
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
+      {/* Overlay (no cierra modal al hacer clic fuera) */}
+      <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" />
 
       {/* Modal Container */}
       <div
-        ref={modalRef}
         className={`${contentClasses} flex flex-col transform transition-all ${className}`}
-        onClick={(e) => e.stopPropagation()}
       >
         {showCloseButton && (
           <button
@@ -89,7 +73,6 @@ export const Modal = ({
   );
 };
 
-// 2. Adjuntamos los sub-componentes al objeto Modal para un uso más limpio
 Modal.Header = ModalHeader;
 Modal.Body = ModalBody;
 Modal.Footer = ModalFooter;

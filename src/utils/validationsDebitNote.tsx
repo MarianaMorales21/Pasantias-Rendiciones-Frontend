@@ -46,9 +46,9 @@ export const validateDebitNoteAmount = (
     // Rendiciones anteriores
     const previousRndIds = new Set(sortedRnds.slice(0, sliceIndex).map(r => r.cod_rnd));
 
-    // Monto rendido en rendiciones anteriores (siempre mon_ndb)
+    // Monto rendido en rendiciones anteriores (siempre mon_ndb, solo notas con detalles completos)
     const previousSpent = allDebitNotes
-        .filter((note) => previousRndIds.has(note.rnd_ndb))
+        .filter((note) => previousRndIds.has(note.rnd_ndb) && (note.total_details ?? 0) >= Number(note.mon_ndb || 0))
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
 
     // Reintegros en rendiciones anteriores
@@ -62,9 +62,9 @@ export const validateDebitNoteAmount = (
     // Monto máximo disponible para la rendición actual
     const maxAvailable = orderAmount - previousSpent + previousReintegros + currentReintegro;
 
-    // Monto gastado en la rendición actual (excluyendo la nota que se edita)
+    // Monto gastado en la rendición actual (excluyendo la nota que se edita, solo notas con detalles completos)
     const currentSpent = allDebitNotes
-        .filter((note) => note.rnd_ndb === selectedRnd.cod_rnd && note.cod_ndb !== editingId)
+        .filter((note) => note.rnd_ndb === selectedRnd.cod_rnd && note.cod_ndb !== editingId && (note.total_details ?? 0) >= Number(note.mon_ndb || 0))
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
 
     const remaining = maxAvailable - currentSpent;

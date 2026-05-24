@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function RendicionesDashboard({ renditions = [] }: Props) {
+    const sorted = [...renditions].sort((a, b) => Number(a.num_rnd) - Number(b.num_rnd));
     const fmt = (val: string | number) => {
         const num = Number(val) || 0;
         return "Bs. " + num.toLocaleString("es-VE", { minimumFractionDigits: 2 });
@@ -44,7 +45,7 @@ export default function RendicionesDashboard({ renditions = [] }: Props) {
                                 </td>
                             </tr>
                         ) : (
-                            renditions.map((item, i) => (
+                            sorted.map((item, i) => (
                                 <tr key={item.cod_rnd || i} className="border-b border-gray-100 dark:border-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-800/30 transition-colors">
                                     <td className="p-4">
                                         <span className="font-semibold text-gray-800 dark:text-white/90">Rendición #{item.num_rnd}</span>

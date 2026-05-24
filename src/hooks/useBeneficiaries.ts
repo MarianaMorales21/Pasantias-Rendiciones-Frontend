@@ -15,6 +15,18 @@ export function useBeneficiaries() {
   const [beneficiaryData, setBeneficiaryData] = useState<BeneficiaryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const clearFieldErrors = () => setFieldErrors({});
+
+  const validateBeneficiaryFields = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!rifNum) errors.rifNum = "Este campo es requerido";
+    if (!formData.nom_ben) errors.nom_ben = "Este campo es requerido";
+    if (!formData.dir_ben) errors.dir_ben = "Este campo es requerido";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const [search, setSearch] = useState("");
   const [selectedBeneficiary, setSelectedBeneficiary] = useState<BeneficiaryItem | null>(null);
@@ -65,6 +77,7 @@ export function useBeneficiaries() {
 
   // --- Acciones ---
   const openCreateModal = () => {
+    clearFieldErrors();
     setFormData(emptyForm);
     setRifPrefix("V");
     setRifNum("");
@@ -74,10 +87,7 @@ export function useBeneficiaries() {
   const buildRif = () => `${rifPrefix}-${rifNum}`;
 
   const handleCreate = async () => {
-    if (!rifNum || !formData.nom_ben || !formData.dir_ben) {
-      alert("Por favor, llene todos los campos requeridos.");
-      return;
-    }
+    if (!validateBeneficiaryFields()) return;
     const rifCompleto = buildRif();
     // Validaciones según prefijo
     if (rifPrefix === "V") {
@@ -103,6 +113,7 @@ export function useBeneficiaries() {
   };
 
   const openEditModal = (beneficiary: BeneficiaryItem) => {
+    clearFieldErrors();
     setSelectedBeneficiary(beneficiary);
     setFormData({ ...beneficiary });
     // Extraer prefijo y número del RIF existente
@@ -119,10 +130,7 @@ export function useBeneficiaries() {
 
   const handleSaveEdit = async () => {
     if (selectedBeneficiary) {
-      if (!rifNum || !formData.nom_ben || !formData.dir_ben) {
-        alert("Por favor, llene todos los campos requeridos.");
-        return;
-      }
+      if (!validateBeneficiaryFields()) return;
       const rifCompleto = buildRif();
       try {
         const { rif_ben, ...data } = formData;
@@ -165,6 +173,8 @@ export function useBeneficiaries() {
     beneficiaryData,
     loading,
     error,
+    fieldErrors,
+    clearFieldErrors,
     search,
     setSearch,
     filteredData,

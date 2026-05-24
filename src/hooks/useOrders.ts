@@ -7,6 +7,23 @@ export const useOrders = () => {
     const [data, setData] = useState<OrderItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    const clearFieldErrors = () => setFieldErrors({});
+
+    const validateOrderFields = (formData: Partial<OrderItem>): boolean => {
+        const errors: Record<string, string> = {};
+        if (!formData.num_opg) errors.num_opg = "Este campo es requerido";
+        if (!formData.ced_opg) errors.ced_opg = "Este campo es requerido";
+        if (!formData.fec_opg) errors.fec_opg = "Este campo es requerido";
+        if (!formData.fdc_opg) errors.fdc_opg = "Este campo es requerido";
+        if (!formData.dcr_opg) errors.dcr_opg = "Este campo es requerido";
+        if (!formData.mon_opg) errors.mon_opg = "Este campo es requerido";
+        if (!formData.con_opg) errors.con_opg = "Este campo es requerido";
+        if (!formData.par_opg) errors.par_opg = "Este campo es requerido";
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -27,32 +44,23 @@ export const useOrders = () => {
     };
 
     const handleCreate = async (formData: Partial<OrderItem>) => {
-        if (!formData.num_opg || !formData.ced_opg || !formData.fec_opg || !formData.fdc_opg || !formData.dcr_opg || !formData.mon_opg || !formData.con_opg || !formData.par_opg) {
-            alert("Por favor, llene todos los campos requeridos.");
-            return null;
-        }
-        // Validar monto mayor a 0
+        if (!validateOrderFields(formData)) return null;
         if (Number(formData.mon_opg) <= 0) {
             alert("El monto de la Orden de Pago debe ser mayor a cero.");
             return null;
         }
-        // Validar fecha emisión no futura
         if (formData.fec_opg && formData.fec_opg > new Date().toISOString().split('T')[0]) {
             alert("La fecha de emisión no puede ser posterior a la fecha actual.");
             return null;
         }
-        // Validar fecha cobro no futura
         if (formData.fco_opg && formData.fco_opg > new Date().toISOString().split('T')[0]) {
             alert("La fecha de cobro no puede ser posterior a la fecha actual.");
             return null;
         }
-        // Validar fecha cobro no anterior a emisión
         if (formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg) {
             alert("La fecha de cobro no puede ser anterior a la fecha de emisión.");
             return null;
         }
-
-        // Validar fecha decreto no posterior a emisión
         if (formData.fdc_opg && formData.fec_opg && formData.fdc_opg > formData.fec_opg) {
             alert("La fecha del decreto no puede ser posterior a la fecha de emisión.");
             return null;
@@ -66,6 +74,7 @@ export const useOrders = () => {
                 return null;
             }
             await fetchData();
+            clearFieldErrors();
             return response;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error de red";
@@ -77,31 +86,23 @@ export const useOrders = () => {
     };
 
     const handleUpdate = async (id: number, formData: Partial<OrderItem>) => {
-        if (!formData.num_opg || !formData.ced_opg || !formData.fec_opg || !formData.fdc_opg || !formData.dcr_opg || !formData.mon_opg || !formData.con_opg || !formData.par_opg) {
-            alert("Por favor, llene todos los campos requeridos.");
-            return false;
-        }
-        // Validar monto mayor a 0
+        if (!validateOrderFields(formData)) return false;
         if (Number(formData.mon_opg) <= 0) {
             alert("El monto de la Orden de Pago debe ser mayor a cero.");
             return false;
         }
-        // Validar fecha emisión no futura
         if (formData.fec_opg && formData.fec_opg > new Date().toISOString().split('T')[0]) {
             alert("La fecha de emisión no puede ser posterior a la fecha actual.");
             return false;
         }
-        // Validar fecha cobro no futura
         if (formData.fco_opg && formData.fco_opg > new Date().toISOString().split('T')[0]) {
             alert("La fecha de cobro no puede ser posterior a la fecha actual.");
             return false;
         }
-        // Validar fecha cobro no anterior a emisión
         if (formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg) {
             alert("La fecha de cobro no puede ser anterior a la fecha de emisión.");
             return false;
         }
-        // Validar fecha decreto no posterior a emisión
         if (formData.fdc_opg && formData.fec_opg && formData.fdc_opg > formData.fec_opg) {
             alert("La fecha del decreto no puede ser posterior a la fecha de emisión.");
             return false;
@@ -115,6 +116,7 @@ export const useOrders = () => {
                 return false;
             }
             await fetchData();
+            clearFieldErrors();
             return true;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error de red";
@@ -151,6 +153,8 @@ export const useOrders = () => {
         data,
         isLoading,
         error,
+        fieldErrors,
+        clearFieldErrors,
         fetchData,
         handleCreate,
         handleUpdate,

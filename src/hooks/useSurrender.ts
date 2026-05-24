@@ -82,6 +82,9 @@ export function useSurrender() {
     const [error] = useState<string | null>(null);
     const [warningMessage, setWarningMessage] = useState("");
     const [isWarningOpen, setIsWarningOpen] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    const clearFieldErrors = () => setFieldErrors({});
 
     // ─────────────────────────────────────────────────────────
     // AUXILIARES
@@ -143,9 +146,9 @@ export function useSurrender() {
     // CÁLCULOS FINANCIEROS
     // ─────────────────────────────────────────────────────────
 
-    // Total rendido = suma de mon_ndb de todas las notas de la OPG
+    // Total rendido = suma de mon_ndb de notas con detalles completos (total_details >= mon_ndb)
     const totalRendered = opgDebitNotes.reduce(
-        (acc, note) => acc + Number(note.mon_ndb || 0),
+        (acc, note) => acc + ((note.total_details ?? 0) >= Number(note.mon_ndb || 0) ? Number(note.mon_ndb || 0) : 0),
         0
     );
 
@@ -325,8 +328,13 @@ export function useSurrender() {
             return;
         }
 
-        if (!rndFormData.num_rnd || !rndFormData.opg_rnd || !rndFormData.fec_rnd || !rndFormData.prd_rnd) {
-            alert("Por favor, llene todos los campos requeridos.");
+        const rndErrors: Record<string, string> = {};
+        if (!rndFormData.num_rnd) rndErrors.rnd_num_rnd = "Este campo es requerido";
+        if (!rndFormData.opg_rnd) rndErrors.rnd_opg_rnd = "Este campo es requerido";
+        if (!rndFormData.fec_rnd) rndErrors.rnd_fec_rnd = "Este campo es requerido";
+        if (!rndFormData.prd_rnd) rndErrors.rnd_prd_rnd = "Este campo es requerido";
+        if (Object.keys(rndErrors).length > 0) {
+            setFieldErrors(rndErrors);
             return;
         }
 
@@ -369,8 +377,12 @@ export function useSurrender() {
     const handleRndUpdate = async () => {
         if (!selectedRnd) return;
 
-        if (!rndFormData.num_rnd || !rndFormData.fec_rnd || !rndFormData.prd_rnd) {
-            alert("Por favor, llene todos los campos requeridos.");
+        const updErrors: Record<string, string> = {};
+        if (!rndFormData.num_rnd) updErrors.rnd_num_rnd = "Este campo es requerido";
+        if (!rndFormData.fec_rnd) updErrors.rnd_fec_rnd = "Este campo es requerido";
+        if (!rndFormData.prd_rnd) updErrors.rnd_prd_rnd = "Este campo es requerido";
+        if (Object.keys(updErrors).length > 0) {
+            setFieldErrors(updErrors);
             return;
         }
 
@@ -468,14 +480,23 @@ export function useSurrender() {
             ? Math.round(((ndbFormData.sub_ndb || 0) - (ndbFormData.rtc_ndb || 0) - (ndbFormData.tbf_ndb || 0) - (ndbFormData.isl_ndb || 0)) * 100) / 100
             : ndbFormData.mon_ndb;
 
-        if (!ndbFormData.num_ndb || !ndbFormData.fec_ndb || !ndbFormData.rif_ndb || !ndbFormData.pro_ndb || !monCalculado) {
-            alert("Por favor, llene todos los campos requeridos.");
-            return;
-        }
-
         // Validar fecha no futura
         if (ndbFormData.fec_ndb && new Date(ndbFormData.fec_ndb) > new Date()) {
             alert("La fecha de la Nota de Débito no puede ser posterior a la fecha actual.");
+            return;
+        }
+
+        const ndbErrors: Record<string, string> = {};
+        if (!ndbFormData.num_ndb) ndbErrors.ndb_num_ndb = "Este campo es requerido";
+        if (!ndbFormData.fec_ndb) ndbErrors.ndb_fec_ndb = "Este campo es requerido";
+        if (!ndbFormData.rif_ndb) ndbErrors.ndb_rif_ndb = "Este campo es requerido";
+        if (!ndbFormData.pro_ndb) ndbErrors.ndb_pro_ndb = "Este campo es requerido";
+        if (!ndbFormData.ban_ndb) ndbErrors.ndb_ban_ndb = "Este campo es requerido";
+        if (!ndbFormData.ref_ndb) ndbErrors.ndb_ref_ndb = "Este campo es requerido";
+        if (!ndbFormData.con_ndb) ndbErrors.ndb_con_ndb = "Este campo es requerido";
+        if (!monCalculado) ndbErrors.ndb_mon_ndb = "Este campo es requerido";
+        if (Object.keys(ndbErrors).length > 0) {
+            setFieldErrors(ndbErrors);
             return;
         }
 
@@ -545,8 +566,17 @@ export function useSurrender() {
             return;
         }
 
-        if (!ndbFormData.num_ndb || !ndbFormData.fec_ndb || !ndbFormData.rif_ndb || !ndbFormData.pro_ndb || !monCalculado) {
-            alert("Por favor, llene todos los campos requeridos.");
+        const updNdbErrors: Record<string, string> = {};
+        if (!ndbFormData.num_ndb) updNdbErrors.ndb_num_ndb = "Este campo es requerido";
+        if (!ndbFormData.fec_ndb) updNdbErrors.ndb_fec_ndb = "Este campo es requerido";
+        if (!ndbFormData.rif_ndb) updNdbErrors.ndb_rif_ndb = "Este campo es requerido";
+        if (!ndbFormData.pro_ndb) updNdbErrors.ndb_pro_ndb = "Este campo es requerido";
+        if (!ndbFormData.ban_ndb) updNdbErrors.ndb_ban_ndb = "Este campo es requerido";
+        if (!ndbFormData.ref_ndb) updNdbErrors.ndb_ref_ndb = "Este campo es requerido";
+        if (!ndbFormData.con_ndb) updNdbErrors.ndb_con_ndb = "Este campo es requerido";
+        if (!monCalculado) updNdbErrors.ndb_mon_ndb = "Este campo es requerido";
+        if (Object.keys(updNdbErrors).length > 0) {
+            setFieldErrors(updNdbErrors);
             return;
         }
 
@@ -635,7 +665,7 @@ export function useSurrender() {
     const handleDrnCreate = async () => {
 
         if (!drnFormData.mon_drn) {
-            alert("Por favor, ingrese el monto.");
+            setFieldErrors({ drn_mon_drn: "Este campo es requerido" });
             return;
         }
 
@@ -672,7 +702,7 @@ export function useSurrender() {
         if (!selectedDrn) return;
 
         if (!drnFormData.mon_drn) {
-            alert("Por favor, ingrese el monto.");
+            setFieldErrors({ drn_mon_drn: "Este campo es requerido" });
             return;
         }
 
@@ -745,6 +775,8 @@ export function useSurrender() {
 
         isLoading,
         error,
+        fieldErrors,
+        clearFieldErrors,
 
         selectedOpg,
         setSelectedOpg,

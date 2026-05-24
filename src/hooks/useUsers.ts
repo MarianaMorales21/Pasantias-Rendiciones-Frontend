@@ -13,9 +13,13 @@ const emptyForm: UserItem = {
 };
 
 export function useUsers() {
+  // --- Estados ---
   const [userData, setUserData] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const clearFieldErrors = () => setFieldErrors({});
 
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
@@ -60,13 +64,19 @@ export function useUsers() {
 
   // --- Acciones ---
   const openCreateModal = () => {
+    clearFieldErrors();
     setFormData(emptyForm);
     setIsCreateModalOpen(true);
   };
 
   const handleCreate = async () => {
-    if (!formData.ced_usu || !formData.nom_usu || !formData.ema_usu || !formData.cla_usu) {
-      alert("Por favor, llene todos los campos requeridos.");
+    const errors: Record<string, string> = {};
+    if (!formData.ced_usu) errors.ced_usu = "Este campo es requerido";
+    if (!formData.nom_usu) errors.nom_usu = "Este campo es requerido";
+    if (!formData.ema_usu) errors.ema_usu = "Este campo es requerido";
+    if (!formData.cla_usu) errors.cla_usu = "Este campo es requerido";
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
     // Validar formato cédula (solo números, 6-8 dígitos)
@@ -80,7 +90,7 @@ export function useUsers() {
       return;
     }
     // Validar contraseña mínimo 8 caracteres
-    if (formData.cla_usu.length < 8) {
+    if (formData.cla_usu && formData.cla_usu.length < 8) {
       alert("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
@@ -96,6 +106,7 @@ export function useUsers() {
   };
 
   const openEditModal = (user: UserItem) => {
+    clearFieldErrors();
     setSelectedUser(user);
     setFormData({
       ...user,
@@ -106,8 +117,12 @@ export function useUsers() {
 
   const handleSaveEdit = async () => {
     if (selectedUser) {
-      if (!formData.ced_usu || !formData.nom_usu || !formData.ema_usu) {
-        alert("Por favor, llene todos los campos requeridos.");
+      const errors: Record<string, string> = {};
+      if (!formData.ced_usu) errors.ced_usu = "Este campo es requerido";
+      if (!formData.nom_usu) errors.nom_usu = "Este campo es requerido";
+      if (!formData.ema_usu) errors.ema_usu = "Este campo es requerido";
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
         return;
       }
       // Validar formato email
@@ -162,6 +177,8 @@ export function useUsers() {
     userData,
     loading,
     error,
+    fieldErrors,
+    clearFieldErrors,
     search,
     setSearch,
     filteredData,

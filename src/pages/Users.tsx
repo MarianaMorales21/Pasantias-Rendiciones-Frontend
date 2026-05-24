@@ -32,9 +32,10 @@ interface UserFormProps {
   onChange: <K extends keyof FormData>(key: K, value: FormData[K]) => void;
   editMode?: boolean;
   states: StateItem[];
+  fieldErrors?: Record<string, string>;
 }
 
-function UserForm({ formData, onChange, editMode = false, states }: UserFormProps) {
+function UserForm({ formData, onChange, editMode = false, states, fieldErrors = {} }: UserFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -45,7 +46,11 @@ function UserForm({ formData, onChange, editMode = false, states }: UserFormProp
             placeholder="Ej: Juan Pérez"
             value={formData.nom_usu}
             onChange={(e) => onChange("nom_usu", e.target.value)}
+            className={fieldErrors.nom_usu ? "border-red-500" : ""}
           />
+          {fieldErrors.nom_usu && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-cedula">Cédula</Label>
@@ -55,7 +60,11 @@ function UserForm({ formData, onChange, editMode = false, states }: UserFormProp
             value={formData.ced_usu}
             onChange={(e) => onChange("ced_usu", e.target.value)}
             disabled={editMode}
+            className={fieldErrors.ced_usu ? "border-red-500" : ""}
           />
+          {fieldErrors.ced_usu && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -67,7 +76,11 @@ function UserForm({ formData, onChange, editMode = false, states }: UserFormProp
             placeholder="Ej: jperez@fundes.com"
             value={formData.ema_usu}
             onChange={(e) => onChange("ema_usu", e.target.value)}
+            className={fieldErrors.ema_usu ? "border-red-500" : ""}
           />
+          {fieldErrors.ema_usu && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-rol">Rol</Label>
@@ -94,7 +107,11 @@ function UserForm({ formData, onChange, editMode = false, states }: UserFormProp
             autoComplete="new-password"
             value={formData.cla_usu}
             onChange={(e) => onChange("cla_usu", e.target.value)}
+            className={fieldErrors.cla_usu ? "border-red-500" : ""}
           />
+          {fieldErrors.cla_usu && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-estado">Estado</Label>
@@ -125,6 +142,7 @@ export default function Users() {
   const {
     loading,
     error,
+    fieldErrors,
     search,
     setSearch,
     filteredData,
@@ -295,7 +313,7 @@ export default function Users() {
       {/* --- MODAL CREAR --- */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header>Nuevo Usuario</Modal.Header>
-        <UserForm formData={formData} onChange={handleFieldChange} states={userStates} />
+        <UserForm formData={formData} onChange={handleFieldChange} states={userStates} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
             Cancelar
@@ -309,7 +327,7 @@ export default function Users() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Usuario</Modal.Header>
-        <UserForm formData={formData} onChange={handleFieldChange} editMode states={userStates} />
+        <UserForm formData={formData} onChange={handleFieldChange} editMode states={userStates} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar

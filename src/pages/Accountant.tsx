@@ -25,9 +25,10 @@ interface AccountantFormProps {
   onChange: <K extends keyof AccountantItem>(key: K, value: AccountantItem[K]) => void;
   editMode?: boolean;
   states: StateItem[];
+  fieldErrors?: Record<string, string>;
 }
 
-function AccountantForm({ formData, onChange, editMode = false, states }: AccountantFormProps) {
+function AccountantForm({ formData, onChange, editMode = false, states, fieldErrors = {} }: AccountantFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -39,7 +40,11 @@ function AccountantForm({ formData, onChange, editMode = false, states }: Accoun
             value={formData.ced_ctd}
             onChange={(e) => onChange("ced_ctd", e.target.value)}
             disabled={editMode}
+            className={fieldErrors.ced_ctd ? "border-red-500" : ""}
           />
+          {fieldErrors.ced_ctd && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-nombre">Nombre</Label>
@@ -48,7 +53,11 @@ function AccountantForm({ formData, onChange, editMode = false, states }: Accoun
             placeholder="Ej: Pedro"
             value={formData.nom_ctd}
             onChange={(e) => onChange("nom_ctd", e.target.value)}
+            className={fieldErrors.nom_ctd ? "border-red-500" : ""}
           />
+          {fieldErrors.nom_ctd && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -59,7 +68,11 @@ function AccountantForm({ formData, onChange, editMode = false, states }: Accoun
             placeholder="Ej: Pérez"
             value={formData.ape_ctd}
             onChange={(e) => onChange("ape_ctd", e.target.value)}
+            className={fieldErrors.ape_ctd ? "border-red-500" : ""}
           />
+          {fieldErrors.ape_ctd && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-direccion">Dirección</Label>
@@ -68,7 +81,11 @@ function AccountantForm({ formData, onChange, editMode = false, states }: Accoun
             placeholder="Ej: Av. Bolívar 123"
             value={formData.dir_ctd}
             onChange={(e) => onChange("dir_ctd", e.target.value)}
+            className={fieldErrors.dir_ctd ? "border-red-500" : ""}
           />
+          {fieldErrors.dir_ctd && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
       </div>
       <div>
@@ -96,6 +113,7 @@ export default function Accountant() {
   const {
     loading,
     error,
+    fieldErrors,
     search,
     setSearch,
     filteredData,
@@ -249,7 +267,7 @@ export default function Accountant() {
       {/* --- MODAL CREAR --- */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header>Nuevo Cuentadante</Modal.Header>
-        <AccountantForm formData={formData} onChange={handleFieldChange} states={accountantStates} />
+        <AccountantForm formData={formData} onChange={handleFieldChange} states={accountantStates} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
             Cancelar
@@ -263,7 +281,7 @@ export default function Accountant() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Cuentadante</Modal.Header>
-        <AccountantForm formData={formData} onChange={handleFieldChange} editMode states={accountantStates} />
+        <AccountantForm formData={formData} onChange={handleFieldChange} editMode states={accountantStates} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar

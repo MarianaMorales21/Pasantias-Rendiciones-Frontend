@@ -23,10 +23,7 @@ interface RecentOrdersProps {
 
 export default function RendicionesDashboard({ history = [] }: RecentOrdersProps) {
   const formatCurrency = (value: number | string) => {
-    return new Intl.NumberFormat('es-VE', {
-      style: 'currency',
-      currency: 'VES',
-    }).format(Number(value));
+    return "Bs. " + Number(value).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (

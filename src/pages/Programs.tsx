@@ -24,9 +24,10 @@ interface ProgramFormProps {
   formData: ProgramsItem;
   onChange: <K extends keyof ProgramsItem>(key: K, value: ProgramsItem[K]) => void;
   states: StateItem[];
+  fieldErrors?: Record<string, string>;
 }
 
-function ProgramForm({ formData, onChange, states }: ProgramFormProps) {
+function ProgramForm({ formData, onChange, states, fieldErrors = {} }: ProgramFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div>
@@ -36,7 +37,11 @@ function ProgramForm({ formData, onChange, states }: ProgramFormProps) {
           placeholder="Ej: Programa Alimentario"
           value={formData.nom_pro}
           onChange={(e) => onChange("nom_pro", e.target.value)}
+          className={fieldErrors.nom_pro ? "border-red-500" : ""}
         />
+        {fieldErrors.nom_pro && (
+          <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+        )}
       </div>
       <div>
         <Label htmlFor="f-estado">Estado</Label>
@@ -63,6 +68,7 @@ export default function Programs() {
   const {
     isLoading,
     error,
+    fieldErrors,
     search,
     setSearch,
     filteredData,
@@ -203,7 +209,7 @@ export default function Programs() {
       {/* --- MODAL CREAR --- */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header>Nuevo Programa</Modal.Header>
-        <ProgramForm formData={formData} onChange={handleFieldChange} states={programStates} />
+        <ProgramForm formData={formData} onChange={handleFieldChange} states={programStates} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
             Cancelar
@@ -215,7 +221,7 @@ export default function Programs() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Programa</Modal.Header>
-        <ProgramForm formData={formData} onChange={handleFieldChange} states={programStates} />
+        <ProgramForm formData={formData} onChange={handleFieldChange} states={programStates} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar

@@ -34,6 +34,7 @@ interface OrderFormProps {
   cuentadantes: AccountantItem[];
   states: StateItem[];
   partidas: departureItem[];
+  fieldErrors?: Record<string, string>;
 }
 
 const emptyForm: OrderFormData = {
@@ -50,7 +51,7 @@ const emptyForm: OrderFormData = {
 };
 
 // ─── Componente de formulario ────────────────────────────────────────────────
-function OrderForm({ formData, onChange, cuentadantes, states, partidas }: OrderFormProps) {
+function OrderForm({ formData, onChange, cuentadantes, states, partidas, fieldErrors = {} }: OrderFormProps) {
   const today = new Date().toISOString().split("T")[0];
   const futureDateEmision = formData.fec_opg && formData.fec_opg > today;
   const futureDateCobro = formData.fco_opg && formData.fco_opg > today;
@@ -68,7 +69,11 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             placeholder="Ej: 123"
             value={formData.num_opg || ""}
             onChange={(e) => onChange("num_opg", parseInt(e.target.value) || 0)}
+            className={fieldErrors.num_opg ? "border-red-500" : ""}
           />
+          {fieldErrors.num_opg && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-monto">Monto (Bs.)</Label>
@@ -79,7 +84,11 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             placeholder="Ej: 15000.00"
             value={formData.mon_opg}
             onChange={(e) => onChange("mon_opg", e.target.value)}
+            className={fieldErrors.mon_opg ? "border-red-500" : ""}
           />
+          {fieldErrors.mon_opg && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
 
         <div className="sm:col-span-2">
@@ -88,7 +97,7 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             id="f-cuentadante"
             value={formData.ced_opg}
             onChange={(e) => onChange("ced_opg", e.target.value)}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors.ced_opg ? "border-red-500" : "border-gray-300"}`}
           >
             <option value="">Seleccione un cuentadante</option>
             {cuentadantes.map((c) => (
@@ -97,6 +106,9 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
               </option>
             ))}
           </select>
+          {fieldErrors.ced_opg && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
 
         <div>
@@ -106,12 +118,15 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             type="date"
             value={formData.fec_opg ? formData.fec_opg.split('T')[0] : ""}
             onChange={(e) => onChange("fec_opg", e.target.value)}
-            className={futureDateEmision ? "border-red-500" : ""}
+            className={futureDateEmision || fieldErrors.fec_opg ? "border-red-500" : ""}
           />
           {futureDateEmision && (
             <p className="text-xs text-red-500 mt-1 font-medium">
               La fecha de emisión no puede ser posterior a hoy.
             </p>
+          )}
+          {fieldErrors.fec_opg && !futureDateEmision && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}
         </div>
         <div>
@@ -142,12 +157,15 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             type="date"
             value={formData.fdc_opg ? formData.fdc_opg.split('T')[0] : ""}
             onChange={(e) => onChange("fdc_opg", e.target.value)}
-            className={decretoPosteriorAEmision ? "border-red-500" : ""}
+            className={decretoPosteriorAEmision || fieldErrors.fdc_opg ? "border-red-500" : ""}
           />
           {decretoPosteriorAEmision && (
             <p className="text-xs text-red-500 mt-1 font-medium">
               La fecha de decreto no puede ser posterior a la fecha de emisión.
             </p>
+          )}
+          {fieldErrors.fdc_opg && !decretoPosteriorAEmision && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}
         </div>
         <div>
@@ -158,7 +176,11 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             placeholder="Ej: DEC-2024"
             value={formData.dcr_opg || ""}
             onChange={(e) => onChange("dcr_opg", e.target.value)}
+            className={fieldErrors.dcr_opg ? "border-red-500" : ""}
           />
+          {fieldErrors.dcr_opg && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
 
         <div>
@@ -167,15 +189,18 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
             id="f-par"
             value={formData.par_opg}
             onChange={(e) => onChange("par_opg", parseInt(e.target.value) || 0)}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors.par_opg ? "border-red-500" : "border-gray-300"}`}
           >
             <option value={0}>Seleccione partida</option>
-            {partidas.map((p) => (
+            {partidas.filter(p => p.nom_par?.toLowerCase().includes('orden de pago')).map((p) => (
               <option key={p.cod_par} value={p.cod_par}>
                 {p.num_par} — {p.nom_par}
               </option>
             ))}
           </select>
+          {fieldErrors.par_opg && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-estado">Estado</Label>
@@ -199,10 +224,13 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
           <textarea
             id="f-con"
             rows={2}
-            className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            className={`w-full rounded-lg border bg-transparent px-4 py-3 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors.con_opg ? "border-red-500" : "border-gray-300"}`}
             value={formData.con_opg}
             onChange={(e) => onChange("con_opg", e.target.value)}
           />
+          {fieldErrors.con_opg && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
       </div>
     </Modal.Body>
@@ -211,7 +239,7 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas }: Order
 
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function Order() {
-  const { data: orders, isLoading, handleCreate: apiCreateOrder, handleUpdate: apiUpdateOrder, handleDelete: apiDeleteOrder } = useOrders();
+  const { data: orders, isLoading, fieldErrors, clearFieldErrors, handleCreate: apiCreateOrder, handleUpdate: apiUpdateOrder, handleDelete: apiDeleteOrder } = useOrders();
   const { accountantData } = useAccountants();
   const { data: allStates } = useStateData();
   const states = allStates.filter(
@@ -245,7 +273,9 @@ export default function Order() {
 
   // --- Acciones ---
   const openCreateModal = () => {
-    setFormData(emptyForm);
+    clearFieldErrors();
+    const pendiente = states.find((s) => s.nom_sta === "Pendiente");
+    setFormData({ ...emptyForm, sta_opg: pendiente ? pendiente.cod_sta : emptyForm.sta_opg });
     setIsCreateModalOpen(true);
   };
 
@@ -257,6 +287,7 @@ export default function Order() {
   };
 
   const openEditModal = (order: OrderItem) => {
+    clearFieldErrors();
     setSelectedOrder(order);
     const { num_opg, ced_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg } = order;
     setFormData({ num_opg, ced_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg });
@@ -442,6 +473,7 @@ export default function Order() {
           cuentadantes={accountantData || []}
           states={states || []}
           partidas={partidas || []}
+          fieldErrors={fieldErrors}
         />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
@@ -462,6 +494,7 @@ export default function Order() {
           cuentadantes={accountantData || []}
           states={states || []}
           partidas={partidas || []}
+          fieldErrors={fieldErrors}
         />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>

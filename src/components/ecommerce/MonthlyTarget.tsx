@@ -30,10 +30,7 @@ export default function RendicionTargetCard({ summary }: MonthlyTargetProps) {
 
   // Formateador de Moneda
   const fCurrency = (val: number) =>
-    new Intl.NumberFormat("es-VE", {
-      style: "currency",
-      currency: "VES",
-    }).format(val);
+    "Bs. " + val.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Configuración del Gráfico ApexCharts
   const chartOptions: ApexOptions = {

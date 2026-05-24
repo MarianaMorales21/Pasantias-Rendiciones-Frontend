@@ -16,6 +16,9 @@ export function usePrograms() {
   const [data, setData] = useState<ProgramsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const clearFieldErrors = () => setFieldErrors({});
 
   const [search, setSearch] = useState("");
   const [selectedProgram, setSelectedProgram] = useState<ProgramsItem | null>(null);
@@ -61,13 +64,14 @@ export function usePrograms() {
 
   // --- Acciones ---
   const openCreateModal = () => {
+    clearFieldErrors();
     setFormData(emptyForm);
     setIsCreateModalOpen(true);
   };
 
   const handleCreate = async () => {
     if (!formData.nom_pro) {
-      alert("Por favor, llene todos los campos requeridos.");
+      setFieldErrors({ nom_pro: "Este campo es requerido" });
       return null;
     }
     setIsLoading(true);
@@ -77,6 +81,7 @@ export function usePrograms() {
       const response = await programsService.create(body);
       if (isApiError(response)) throw new Error(response.statusText || "Error desconocido");
       await fetchData();
+      clearFieldErrors();
       setIsCreateModalOpen(false);
       return response;
     } catch (err: unknown) {
@@ -89,6 +94,7 @@ export function usePrograms() {
   };
 
   const openEditModal = (program: ProgramsItem) => {
+    clearFieldErrors();
     setSelectedProgram(program);
     setFormData({ ...program });
     setIsEditModalOpen(true);
@@ -97,7 +103,7 @@ export function usePrograms() {
   const handleUpdate = async () => {
     if (selectedProgram) {
       if (!formData.nom_pro) {
-        alert("Por favor, llene todos los campos requeridos.");
+        setFieldErrors({ nom_pro: "Este campo es requerido" });
         return false;
       }
       setIsLoading(true);
@@ -106,6 +112,7 @@ export function usePrograms() {
         const response = await programsService.update(cod_pro, body);
         if (isApiError(response)) throw new Error(response.statusText || "Error desconocido");
         await fetchData();
+        clearFieldErrors();
         setIsEditModalOpen(false);
         return true;
       } catch (err: unknown) {
@@ -151,6 +158,8 @@ export function usePrograms() {
     data,
     isLoading,
     error,
+    fieldErrors,
+    clearFieldErrors,
     search,
     setSearch,
     filteredData,

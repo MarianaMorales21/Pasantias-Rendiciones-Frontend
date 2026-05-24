@@ -3,17 +3,16 @@ import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
-import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal/index";
 import { useAuth } from "../../context/AuthContext";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
   const [cedula, setCedula] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [suspendedModalOpen, setSuspendedModalOpen] = useState(false);
   const [suspendedMessage, setSuspendedMessage] = useState("");
@@ -23,6 +22,16 @@ export default function SignInForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+    setFieldErrors({});
+
+    const errors: Record<string, string> = {};
+    if (!cedula.trim()) errors.cedula = "Este campo no puede faltar.";
+    if (!password.trim()) errors.password = "Este campo no puede faltar.";
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -70,9 +79,12 @@ export default function SignInForm() {
                 type="text"
                 placeholder="12345678"
                 value={cedula}
-                onChange={(e) => setCedula(e.target.value)}
-                className="w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20"
+                onChange={(e) => { setCedula(e.target.value); setFieldErrors((prev) => ({ ...prev, cedula: "" })); }}
+                className={`w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 ${fieldErrors.cedula ? "border-red-500" : ""}`}
               />
+              {fieldErrors.cedula && (
+                <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.cedula}</p>
+              )}
             </div>
 
             {/* Password Field */}
@@ -85,9 +97,12 @@ export default function SignInForm() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20"
+                  onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: "" })); }}
+                  className={`w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 ${fieldErrors.password ? "border-red-500" : ""}`}
                 />
+                {fieldErrors.password && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.password}</p>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

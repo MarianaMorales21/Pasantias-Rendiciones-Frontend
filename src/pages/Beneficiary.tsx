@@ -31,7 +31,19 @@ interface BeneficiaryFormProps {
   onRifNumChange: (num: string) => void;
 }
 
-function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPrefix, onRifPrefixChange, rifNum, onRifNumChange }: BeneficiaryFormProps) {
+interface BeneficiaryFormProps {
+  formData: BeneficiaryItem;
+  onChange: <K extends keyof BeneficiaryItem>(key: K, value: BeneficiaryItem[K]) => void;
+  editMode?: boolean;
+  states: StateItem[];
+  rifPrefix: "V" | "G";
+  onRifPrefixChange: (prefix: "V" | "G") => void;
+  rifNum: string;
+  onRifNumChange: (num: string) => void;
+  fieldErrors?: Record<string, string>;
+}
+
+function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPrefix, onRifPrefixChange, rifNum, onRifNumChange, fieldErrors = {} }: BeneficiaryFormProps) {
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -55,14 +67,20 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
                 value={rifNum}
                 onChange={(e) => onRifNumChange(e.target.value)}
                 disabled={editMode}
+                className={fieldErrors.rifNum ? "border-red-500" : ""}
               />
             </div>
           </div>
-          <p className="mt-1 text-xs text-gray-400">
-            {rifPrefix === "V"
-              ? "Cédula de identidad (7-8 dígitos)"
-              : "RIF tipo G (número con guion antes del último dígito)"}
-          </p>
+          {fieldErrors.rifNum && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
+          {!fieldErrors.rifNum && (
+            <p className="mt-1 text-xs text-gray-400">
+              {rifPrefix === "V"
+                ? "Cédula de identidad (7-8 dígitos)"
+                : "RIF tipo G (número con guion antes del último dígito)"}
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-nombre">Nombre completo</Label>
@@ -71,7 +89,11 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
             placeholder="Ej: María González"
             value={formData.nom_ben}
             onChange={(e) => onChange("nom_ben", e.target.value)}
+            className={fieldErrors.nom_ben ? "border-red-500" : ""}
           />
+          {fieldErrors.nom_ben && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -82,7 +104,11 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
             placeholder="Ej: Av. Principal 123"
             value={formData.dir_ben}
             onChange={(e) => onChange("dir_ben", e.target.value)}
+            className={fieldErrors.dir_ben ? "border-red-500" : ""}
           />
+          {fieldErrors.dir_ben && (
+            <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
+          )}
         </div>
         <div>
           <Label htmlFor="f-estado">Estado</Label>
@@ -110,6 +136,7 @@ export default function Beneficiary() {
   const {
     loading,
     error,
+    fieldErrors,
     search,
     setSearch,
     filteredData,
@@ -267,7 +294,7 @@ export default function Beneficiary() {
       {/* --- MODAL CREAR --- */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header>Nuevo Beneficiario</Modal.Header>
-        <BeneficiaryForm formData={formData} onChange={handleFieldChange} states={beneficiaryStates} rifPrefix={rifPrefix} onRifPrefixChange={setRifPrefix} rifNum={rifNum} onRifNumChange={setRifNum} />
+        <BeneficiaryForm formData={formData} onChange={handleFieldChange} states={beneficiaryStates} rifPrefix={rifPrefix} onRifPrefixChange={setRifPrefix} rifNum={rifNum} onRifNumChange={setRifNum} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
             Cancelar
@@ -281,7 +308,7 @@ export default function Beneficiary() {
       {/* --- MODAL EDITAR --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header>Editar Beneficiario</Modal.Header>
-        <BeneficiaryForm formData={formData} onChange={handleFieldChange} editMode states={beneficiaryStates} rifPrefix={rifPrefix} onRifPrefixChange={setRifPrefix} rifNum={rifNum} onRifNumChange={setRifNum} />
+        <BeneficiaryForm formData={formData} onChange={handleFieldChange} editMode states={beneficiaryStates} rifPrefix={rifPrefix} onRifPrefixChange={setRifPrefix} rifNum={rifNum} onRifNumChange={setRifNum} fieldErrors={fieldErrors} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Cancelar

@@ -16,6 +16,19 @@ export function useAccountants() {
   const [accountantData, setAccountantData] = useState<AccountantItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const clearFieldErrors = () => setFieldErrors({});
+
+  const validateFields = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.ced_ctd) errors.ced_ctd = "Este campo es requerido";
+    if (!formData.nom_ctd) errors.nom_ctd = "Este campo es requerido";
+    if (!formData.ape_ctd) errors.ape_ctd = "Este campo es requerido";
+    if (!formData.dir_ctd) errors.dir_ctd = "Este campo es requerido";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const [search, setSearch] = useState("");
   const [selectedAccountant, setSelectedAccountant] = useState<AccountantItem | null>(null);
@@ -63,15 +76,13 @@ export function useAccountants() {
 
   // --- Acciones ---
   const openCreateModal = () => {
+    clearFieldErrors();
     setFormData(emptyForm);
     setIsCreateModalOpen(true);
   };
 
   const handleCreate = async () => {
-    if (!formData.ced_ctd || !formData.nom_ctd || !formData.ape_ctd || !formData.dir_ctd) {
-      alert("Por favor, llene todos los campos requeridos.");
-      return;
-    }
+    if (!validateFields()) return;
     // Auto-prefix V- a la cédula si no lo tiene
     const cedulaNormalizada = formData.ced_ctd.startsWith("V-")
       ? formData.ced_ctd
@@ -88,6 +99,7 @@ export function useAccountants() {
   };
 
   const openEditModal = (accountant: AccountantItem) => {
+    clearFieldErrors();
     setSelectedAccountant(accountant);
     setFormData({ ...accountant });
     setIsEditModalOpen(true);
@@ -95,10 +107,7 @@ export function useAccountants() {
 
   const handleSaveEdit = async () => {
     if (selectedAccountant) {
-      if (!formData.ced_ctd || !formData.nom_ctd || !formData.ape_ctd || !formData.dir_ctd) {
-        alert("Por favor, llene todos los campos requeridos.");
-        return;
-      }
+      if (!validateFields()) return;
       try {
         const { ced_ctd, ...data } = formData;
         const cedulaNormalizada = ced_ctd.startsWith("V-") ? ced_ctd : `V-${ced_ctd.replace(/^V-?/i, "")}`;
@@ -141,6 +150,8 @@ export function useAccountants() {
     accountantData,
     loading,
     error,
+    fieldErrors,
+    clearFieldErrors,
     search,
     setSearch,
     filteredData,

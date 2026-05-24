@@ -49,12 +49,14 @@ export default function ProfileCard() {
     setLoading(true);
     try {
       const res = await userService.update(user.ced_usu, {
+        nom_usu: user.nom_usu,
         ema_usu: formData.email,
+        sta_usu: user.sta_usu,
+        rol_usu: user.rol_usu,
       });
       if (isApiError(res)) {
         throw new Error(res.statusText || "Error al actualizar perfil");
       }
-      alert("Perfil actualizado correctamente");
       closeModal();
       await verifySession();
     } catch (err) {
