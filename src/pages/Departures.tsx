@@ -12,7 +12,7 @@ import {
   MagnifyingGlassIcon,
   PencilIcon,
   TrashBinIcon,
-  PlusIcon,
+  BudgetItemIcon,
 } from "../icons";
 
 // ─── Componente de formulario ────────────────────────────────────────────────
@@ -153,7 +153,7 @@ export default function Departures() {
               size="md"
               variant="primary"
               className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
-              startIcon={<PlusIcon className="size-5" />}
+              startIcon={<BudgetItemIcon className="size-5" />}
               onClick={openCreateModal}
             >
               Nueva Partida

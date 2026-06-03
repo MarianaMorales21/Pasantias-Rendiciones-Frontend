@@ -58,6 +58,7 @@ import { ReactComponent as ShieldIcon } from "./Sheild-svg (1).svg?react";
 import { ReactComponent as BriefcaseIcon } from "./briefcase-svg.svg?react";
 import { ReactComponent as ClipboardIcon } from "./clipboard-svg.svg?react";
 import { ReactComponent as MagnifyingGlassIcon } from "./magnifyingglass-svg.svg?react";
+import { ReactComponent as BudgetItemIcon } from "./budget-item-svg.svg?react";
 
 export {
   ErrorHexaIcon,
@@ -120,4 +121,5 @@ export {
   ClipboardIcon,
   BriefcaseIcon,
   MagnifyingGlassIcon,
+  BudgetItemIcon,
 };
