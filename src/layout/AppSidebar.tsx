@@ -14,6 +14,7 @@ import {
   BriefcaseIcon,
   ClipboardIcon,
   UserIcon,
+  TableIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
@@ -55,6 +56,11 @@ const navItems: NavItem[] = [
     icon: <BriefcaseIcon />,
     name: "Programas",
     path: "/programs",
+  },
+  {
+    name: "Partidas",
+    icon: <TableIcon />,
+    path: "/departures",
   },
   {
     name: "Ordenes de Pago",

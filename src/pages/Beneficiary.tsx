@@ -25,19 +25,8 @@ interface BeneficiaryFormProps {
   onChange: <K extends keyof BeneficiaryItem>(key: K, value: BeneficiaryItem[K]) => void;
   editMode?: boolean;
   states: StateItem[];
-  rifPrefix: "V" | "G";
-  onRifPrefixChange: (prefix: "V" | "G") => void;
-  rifNum: string;
-  onRifNumChange: (num: string) => void;
-}
-
-interface BeneficiaryFormProps {
-  formData: BeneficiaryItem;
-  onChange: <K extends keyof BeneficiaryItem>(key: K, value: BeneficiaryItem[K]) => void;
-  editMode?: boolean;
-  states: StateItem[];
-  rifPrefix: "V" | "G";
-  onRifPrefixChange: (prefix: "V" | "G") => void;
+  rifPrefix: "V" | "G" | "J";
+  onRifPrefixChange: (prefix: "V" | "G" | "J") => void;
   rifNum: string;
   onRifNumChange: (num: string) => void;
   fieldErrors?: Record<string, string>;
@@ -53,12 +42,13 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
             <select
               id="f-rif-prefix"
               value={rifPrefix}
-              onChange={(e) => onRifPrefixChange(e.target.value as "V" | "G")}
+              onChange={(e) => onRifPrefixChange(e.target.value as "V" | "G" | "J")}
               disabled={editMode}
               className="w-24 h-11 rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             >
               <option value="V">V</option>
               <option value="G">G</option>
+              <option value="J">J</option>
             </select>
             <div className="flex-1">
               <Input
@@ -78,7 +68,7 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
             <p className="mt-1 text-xs text-gray-400">
               {rifPrefix === "V"
                 ? "Cédula de identidad (7-8 dígitos)"
-                : "RIF tipo G (número con guion antes del último dígito)"}
+                : `RIF tipo ${rifPrefix} (número con guion antes del último dígito)`}
             </p>
           )}
         </div>

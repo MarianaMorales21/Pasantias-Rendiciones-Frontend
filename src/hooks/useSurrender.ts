@@ -558,8 +558,9 @@ export function useSurrender() {
             : ndbFormData.mon_ndb;
 
         // Si la nota ya tiene detalles, el monto no puede ser menor a la suma de sus detalles
-        const detailsSum = details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0);
-        if (monCalculado < detailsSum) {
+        const detailsSum = Math.round(details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0) * 100) / 100;
+        const monCalculadoNum = Math.round(Number(monCalculado) * 100) / 100;
+        if (monCalculadoNum < detailsSum) {
             setIsNdbEditOpen(false);
             setWarningMessage(`No se puede reducir el monto de la nota de débito por debajo de la suma de sus detalles (Bs. ${detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
             setIsWarningOpen(true);

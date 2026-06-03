@@ -123,7 +123,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   const bankOptions = [
     "BANCO DE VENEZUELA", "BANESCO", "BANCO MERCANTIL", "BANCO PROVINCIAL",
     "BANCO NACIONAL DE CRÉDITO (BNC)", "BANCARIBE", "BANCO EXTERIOR", "BANPLUS",
-    "BANCO DEL TESORO", "BANCO BICENTENARIO", "BANCO CARONÍ",
+    "BANCO DEL TESORO", "BANCO DIGITAL DE LOS TRABAJADORES", "BANCO CARONÍ",
     "BANCO VENEZOLANO DE CRÉDITO", "100% BANCO", "DEL SUR", "BANCO PLAZA", "BANCO ACTIVO"
   ];
   if (ndbFormData.ban_ndb && !bankOptions.includes(ndbFormData.ban_ndb)) {
@@ -141,10 +141,10 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   );
   const subtotalValido = ndbFormData.has_retention
     ? (ndbFormData.sub_ndb || 0) > sumRetenciones &&
-      Number(ndbFormData.sub_ndb || 0) <= monOpgActual &&
-      Number(ndbFormData.rtc_ndb || 0) <= Number(ndbFormData.sub_ndb || 0) &&
-      Number(ndbFormData.tbf_ndb || 0) <= Number(ndbFormData.sub_ndb || 0) &&
-      Number(ndbFormData.isl_ndb || 0) <= Number(ndbFormData.sub_ndb || 0)
+    Number(ndbFormData.sub_ndb || 0) <= monOpgActual &&
+    Number(ndbFormData.rtc_ndb || 0) <= Number(ndbFormData.sub_ndb || 0) &&
+    Number(ndbFormData.tbf_ndb || 0) <= Number(ndbFormData.sub_ndb || 0) &&
+    Number(ndbFormData.isl_ndb || 0) <= Number(ndbFormData.sub_ndb || 0)
     : true;
 
   // Si hay retenciones, mon_ndb = subtotal - (IVA + Timbre + ISLR)

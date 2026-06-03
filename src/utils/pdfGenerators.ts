@@ -89,7 +89,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
   doc.text(`RENDICIÓN DE CUENTA Nº ${header.num_rnd}`, 195, 31, { align: "right" });
 
   let y = 35;
-  const margin = { left: 10, right: 10 };
+  const margin = { left: 10, right: 10, bottom: 42 };
 
   autoTable(doc, {
     startY: y,
@@ -261,7 +261,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
 
     y = doc.lastAutoTable.finalY + 6;
 
-    if (y > 230) {
+    if (y > 220) {
       doc.addPage();
       y = 35;
     }
@@ -286,7 +286,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
   });
 
   let signY = doc.lastAutoTable.finalY + 35;
-  if (signY > 230) {
+  if (signY > 215) {
     doc.addPage();
     signY = 55;
   }

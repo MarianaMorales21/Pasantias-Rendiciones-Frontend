@@ -15,6 +15,7 @@ import Order from "./pages/Order";
 import Reports from "./pages/Reports";
 import Surrender from "./pages/Surrender";
 import Authorities from "./pages/Authorities";
+import Departures from "./pages/Departures";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="/reports" element={<Reports />} />
               <Route path="/surrender" element={<Surrender />} />
               <Route path="/authorities" element={<Authorities />} />
+              <Route path="/departures" element={<Departures />} />
             </Route>
           </Route>
 

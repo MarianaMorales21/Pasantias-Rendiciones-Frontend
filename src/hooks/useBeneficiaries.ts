@@ -38,7 +38,7 @@ export function useBeneficiaries() {
   const [formData, setFormData] = useState<BeneficiaryItem>(emptyForm);
 
   // Estado separado para el prefijo del RIF y el número
-  const [rifPrefix, setRifPrefix] = useState<"V" | "G">("V");
+  const [rifPrefix, setRifPrefix] = useState<"V" | "G" | "J">("V");
   const [rifNum, setRifNum] = useState("");
 
   // --- Carga de Datos ---
@@ -97,7 +97,7 @@ export function useBeneficiaries() {
       }
     } else {
       if (!/^\d+-\d$/.test(rifNum)) {
-        alert("Para el tipo G, el número debe tener el último dígito separado por un guion. Ej: 12345678-1");
+        alert("Para el tipo G o J, el número debe tener el último dígito separado por un guion. Ej: 12345678-1");
         return;
       }
     }
@@ -117,9 +117,9 @@ export function useBeneficiaries() {
     setSelectedBeneficiary(beneficiary);
     setFormData({ ...beneficiary });
     // Extraer prefijo y número del RIF existente
-    const match = beneficiary.rif_ben.match(/^([VG])-?(.+)$/i);
+    const match = beneficiary.rif_ben.match(/^([VGJ])-?(.+)$/i);
     if (match) {
-      setRifPrefix(match[1].toUpperCase() as "V" | "G");
+      setRifPrefix(match[1].toUpperCase() as "V" | "G" | "J");
       setRifNum(match[2]);
     } else {
       setRifPrefix("V");
