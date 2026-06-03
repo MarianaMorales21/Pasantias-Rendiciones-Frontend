@@ -29,7 +29,7 @@ export function SolicitudFormaPreview({ data, authorities }: { data: FullDetaile
       {/* ENCABEZADO */}
       <div className="grid grid-cols-12 border-b-[2px] border-gray-900 min-h-[90px]">
         <div className="col-span-2 flex items-center justify-center p-2 border-r-[1.5px] border-gray-900">
-          <img src="/images/logos-reports/fundes.png" alt="FUNDES" className="h-16 w-auto object-contain" />
+          <img src="/images/logos-reports/gobernacion.png" alt="GOBERNACIÓN" className="h-10 w-auto object-contain" />
         </div>
         <div className="col-span-4 flex flex-col justify-center items-center text-center p-2 border-r-[1.5px] border-gray-900 text-[8px] font-bold leading-tight">
           <p>GOBIERNO BOLIVARIANO DEL TÁCHIRA</p>
@@ -38,7 +38,7 @@ export function SolicitudFormaPreview({ data, authorities }: { data: FullDetaile
           <p>DE RENDICIÓN DE CUENTAS</p>
         </div>
         <div className="col-span-2 flex items-center justify-center p-2 border-r-[1.5px] border-gray-900">
-          <img src="/images/logos-reports/gobernacion.png" alt="GOBERNACIÓN" className="h-10 w-auto object-contain" />
+          <img src="/images/logos-reports/fundes.png" alt="FUNDES" className="h-16 w-auto object-contain" />
         </div>
         <div className="col-span-4 flex flex-col justify-center items-center p-2 text-center">
           <p className="font-bold text-[10px] leading-tight">SOLICITUD DE CONSTANCIA DE NOTIFICACIÓN DE RENDICIÓN DE CUENTA</p>

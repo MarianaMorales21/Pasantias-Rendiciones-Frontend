@@ -250,7 +250,28 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
 
       {ndbFormData.has_retention && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="ndb-sub">Subtotal (Bs.)</Label>
+            <Input
+              id="ndb-sub"
+              type="number"
+              step={0.01}
+              value={ndbFormData.sub_ndb || ""}
+              onChange={(e) => onChange("sub_ndb", parseFloat(e.target.value) || 0)}
+              className={!subtotalValido && Number(ndbFormData.sub_ndb || 0) > 0 ? "border-red-500" : ""}
+            />
+            {ndbFormData.has_retention && Number(ndbFormData.sub_ndb || 0) > monOpgActual && (
+              <p className="text-xs text-red-500 mt-1 font-medium">
+                El subtotal no puede superar el monto de la OPG (Bs. {monOpgActual.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
+              </p>
+            )}
+            {!subtotalValido && Number(ndbFormData.sub_ndb || 0) > 0 && Number(ndbFormData.sub_ndb || 0) <= monOpgActual && (
+              <p className="text-xs text-red-500 mt-1 font-medium">
+                El subtotal no puede ser menor a la suma de las retenciones.
+              </p>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="ndb-rtc">Retención IVA (Bs.)</Label>
               <Input
@@ -311,27 +332,6 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               {Number(ndbFormData.isl_ndb || 0) > Number(ndbFormData.sub_ndb || 0) && (
                 <p className="text-xs text-red-500 mt-1 font-medium">
                   No puede superar el subtotal (Bs. {Number(ndbFormData.sub_ndb || 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
-                </p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="ndb-sub">Subtotal (Bs.)</Label>
-              <Input
-                id="ndb-sub"
-                type="number"
-                step={0.01}
-                value={ndbFormData.sub_ndb || ""}
-                onChange={(e) => onChange("sub_ndb", parseFloat(e.target.value) || 0)}
-                className={!subtotalValido ? "border-red-500" : ""}
-              />
-              {ndbFormData.has_retention && Number(ndbFormData.sub_ndb || 0) > monOpgActual && (
-                <p className="text-xs text-red-500 mt-1 font-medium">
-                  El subtotal no puede superar el monto de la OPG (Bs. {monOpgActual.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
-                </p>
-              )}
-              {!subtotalValido && Number(ndbFormData.sub_ndb || 0) <= monOpgActual && (
-                <p className="text-xs text-red-500 mt-1 font-medium">
-                  El subtotal no puede ser menor a la suma de las retenciones.
                 </p>
               )}
             </div>

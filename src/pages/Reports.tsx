@@ -59,6 +59,7 @@ type TabType = "detalle" | "acta" | "solicitud_forma" | "solicitud_carta";
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState<TabType>("detalle");
+  const [zoomLevel, setZoomLevel] = useState(1);
   const previewRef = useRef<HTMLDivElement>(null);
   const {
     renditionList,
@@ -231,23 +232,50 @@ export default function Reports() {
         {/* CONTENEDOR DE LA CARPETA */}
         <div className="bg-white dark:bg-gray-900 rounded-b-[2.5rem] rounded-tr-[2.5rem] border-2 border-gray-200 dark:border-gray-700 shadow-2xl shadow-gray-200/50 dark:shadow-none overflow-hidden">
           <div className="p-1 md:p-8 bg-gray-50/50 dark:bg-gray-950/20">
+            {/* Controles de zoom */}
+            {detailedReport && (
+              <div className="flex items-center gap-3 mb-3 px-2">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Zoom:</span>
+                <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                  <button
+                    onClick={() => setZoomLevel(z => Math.max(0.25, +(z - 0.25).toFixed(2)))}
+                    className="px-3 py-1.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-lg transition-colors"
+                    title="Alejar"
+                  >−</button>
+                  <span className="px-3 py-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 min-w-[48px] text-center border-x border-gray-200 dark:border-gray-700 select-none">
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                  <button
+                    onClick={() => setZoomLevel(z => Math.min(2, +(z + 0.25).toFixed(2)))}
+                    className="px-3 py-1.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-lg transition-colors"
+                    title="Acercar"
+                  >+</button>
+                </div>
+                <button
+                  onClick={() => setZoomLevel(1)}
+                  className="px-3 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >Restablecer</button>
+              </div>
+            )}
             <div
               ref={previewRef}
               className="overflow-auto min-h-[800px] max-h-[1200px] bg-white dark:bg-gray-900 rounded-[2rem] shadow-inner border border-gray-200/50 dark:border-gray-800 p-2 md:p-12"
             >
-              {loading ? (
-                <LoadingPreview />
-              ) : activeTab === "detalle" ? (
-                detailedReport ? <DetailedReportPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
-              ) : activeTab === "acta" ? (
-                detailedReport ? <ActaPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
-              ) : activeTab === "solicitud_forma" ? (
-                detailedReport ? <SolicitudFormaPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
-              ) : detailedReport ? (
-                <SolicitudCartaPreview data={detailedReport} authorities={authorities} />
-              ) : (
-                <EmptyPreview message='Seleccione una rendición y genere el reporte' />
-              )}
+              <div style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left', width: `${100 / zoomLevel}%` }}>
+                {loading ? (
+                  <LoadingPreview />
+                ) : activeTab === "detalle" ? (
+                  detailedReport ? <DetailedReportPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+                ) : activeTab === "acta" ? (
+                  detailedReport ? <ActaPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+                ) : activeTab === "solicitud_forma" ? (
+                  detailedReport ? <SolicitudFormaPreview data={detailedReport} authorities={authorities} /> : <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+                ) : detailedReport ? (
+                  <SolicitudCartaPreview data={detailedReport} authorities={authorities} />
+                ) : (
+                  <EmptyPreview message='Seleccione una rendición y genere el reporte' />
+                )}
+              </div>
             </div>
           </div>
         </div>

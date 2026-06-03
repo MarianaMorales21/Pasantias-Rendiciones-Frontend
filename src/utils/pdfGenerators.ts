@@ -35,8 +35,8 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
   try { freddyImg = await loadImage("/images/logos-reports/logoFreddy.png"); } catch { /* ignore */ }
 
   const drawHeader = () => {
-    if (fundesImg) doc.addImage(fundesImg, "PNG", 12, 6, 34, 21);
-    if (gobImg) doc.addImage(gobImg, "PNG", 149, 7, 55, 13);
+    if (gobImg) doc.addImage(gobImg, "PNG", 12, 7, 55, 13);
+    if (fundesImg) doc.addImage(fundesImg, "PNG", 155, 8, 28, 18);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
@@ -637,10 +637,10 @@ export async function exportSolicitudFormaPDF(data: FullDetailedReport, authorit
     ],
     didDrawCell: (data) => {
       if (data.section === 'body' && data.column.index === 0) {
-        doc.addImage(logoFundes, 'PNG', data.cell.x + 2, data.cell.y + 2, 20, 15);
+        doc.addImage(logoGob, 'PNG', data.cell.x + 2, data.cell.y + 5, 26, 9);
       }
       if (data.section === 'body' && data.column.index === 2) {
-        doc.addImage(logoGob, 'PNG', data.cell.x + 2, data.cell.y + 5, 26, 9);
+        doc.addImage(logoFundes, 'PNG', data.cell.x + 2, data.cell.y + 2, 20, 15);
       }
       if (data.column.index === 3) {
         doc.setLineWidth(0.5);

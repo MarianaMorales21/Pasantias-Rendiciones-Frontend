@@ -18,9 +18,9 @@ export function DetailedReportPreview({ data, authorities }: { data: FullDetaile
   const Header = () => (
     <div className="relative mb-5 min-h-[82px]">
       <img
-        src="/images/logos-reports/fundesB.png"
-        alt="FUNDES"
-        className="absolute left-0 top-0 h-[72px] w-auto object-contain"
+        src="/images/logos-reports/gobernacion.png"
+        alt="Gobernación"
+        className="absolute left-0 top-1 h-[48px] w-auto object-contain"
       />
 
       <div className="pt-1 text-center font-bold text-[12px] leading-tight">
@@ -31,9 +31,9 @@ export function DetailedReportPreview({ data, authorities }: { data: FullDetaile
       </div>
 
       <img
-        src="/images/logos-reports/gobernacion.png"
-        alt="Gobernación"
-        className="absolute right-0 top-1 h-[48px] w-auto object-contain"
+        src="/images/logos-reports/fundesB.png"
+        alt="FUNDES"
+        className="absolute right-0 top-0 h-[72px] w-auto object-contain"
       />
     </div>
   );
