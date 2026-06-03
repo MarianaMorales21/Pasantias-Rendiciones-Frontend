@@ -557,14 +557,19 @@ export function useSurrender() {
             ? Math.round(((ndbFormData.sub_ndb || 0) - (ndbFormData.rtc_ndb || 0) - (ndbFormData.tbf_ndb || 0) - (ndbFormData.isl_ndb || 0)) * 100) / 100
             : ndbFormData.mon_ndb;
 
-        // Si la nota ya tiene detalles, el monto no puede ser menor a la suma de sus detalles
-        const detailsSum = Math.round(details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0) * 100) / 100;
+        // Si la nota ya tiene detalles, solo bloquear si el usuario REDUJO el monto
+        // respecto al original. Si no lo tocó (ej: editó solo el concepto), no hay nada que validar.
         const monCalculadoNum = Math.round(Number(monCalculado) * 100) / 100;
-        if (monCalculadoNum < detailsSum) {
-            setIsNdbEditOpen(false);
-            setWarningMessage(`No se puede reducir el monto de la nota de débito por debajo de la suma de sus detalles (Bs. ${detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
-            setIsWarningOpen(true);
-            return;
+        const originalMonNum = Math.round(Number(selectedNdb.mon_ndb) * 100) / 100;
+        const isAmountReduced = monCalculadoNum < originalMonNum;
+        if (isAmountReduced) {
+            const detailsSum = Math.round(details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0) * 100) / 100;
+            if (monCalculadoNum < detailsSum) {
+                setIsNdbEditOpen(false);
+                setWarningMessage(`No se puede reducir el monto de la nota de débito por debajo de la suma de sus detalles (Bs. ${detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
+                setIsWarningOpen(true);
+                return;
+            }
         }
 
         const updNdbErrors: Record<string, string> = {};

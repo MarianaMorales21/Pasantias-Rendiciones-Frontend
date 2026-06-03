@@ -89,7 +89,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
   doc.text(`RENDICIÓN DE CUENTA Nº ${header.num_rnd}`, 195, 31, { align: "right" });
 
   let y = 35;
-  const margin = { left: 10, right: 10, bottom: 42 };
+  const margin = { left: 10, right: 10, top: 30, bottom: 42 };
 
   autoTable(doc, {
     startY: y,
