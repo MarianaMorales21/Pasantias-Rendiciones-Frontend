@@ -4,6 +4,7 @@ import { AccountantItem } from "../types/accountant";
 import { isApiError } from "../helpers/helpHttp";
 
 const emptyForm: AccountantItem = {
+  cod_ctd: 0,
   ced_ctd: "",
   ape_ctd: "",
   nom_ctd: "",
@@ -37,6 +38,8 @@ export function useAccountants() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
   const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
   const [formData, setFormData] = useState<AccountantItem>(emptyForm);
 
   // --- Carga de Datos ---
@@ -83,6 +86,11 @@ export function useAccountants() {
 
   const handleCreate = async () => {
     if (!validateFields()) return;
+    const numPart = formData.ced_ctd.replace(/^V-?/i, "").trim();
+    if (!/^\d{1,8}$/.test(numPart)) {
+      setFieldErrors({ ced_ctd: "La cédula debe contener solo números (máximo 8 dígitos)" });
+      return;
+    }
     // Auto-prefix V- a la cédula si no lo tiene
     const cedulaNormalizada = formData.ced_ctd.startsWith("V-")
       ? formData.ced_ctd
@@ -94,7 +102,8 @@ export function useAccountants() {
       setIsCreateModalOpen(false);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      alert("Error al crear cuentadante: " + message);
+      setWarningMessage(message);
+      setIsWarningModalOpen(true);
     }
   };
 
@@ -108,16 +117,26 @@ export function useAccountants() {
   const handleSaveEdit = async () => {
     if (selectedAccountant) {
       if (!validateFields()) return;
+      const numPart = formData.ced_ctd.replace(/^V-?/i, "").trim();
+      if (!/^\d{1,8}$/.test(numPart)) {
+        setFieldErrors({ ced_ctd: "La cédula debe contener solo números (máximo 8 dígitos)" });
+        return;
+      }
       try {
-        const { ced_ctd, ...data } = formData;
-        const cedulaNormalizada = ced_ctd.startsWith("V-") ? ced_ctd : `V-${ced_ctd.replace(/^V-?/i, "")}`;
-        const response = await accountantService.update(cedulaNormalizada, data);
+        const nuevaCedula = formData.ced_ctd.startsWith("V-")
+          ? formData.ced_ctd
+          : `V-${formData.ced_ctd.replace(/^V-?/i, "")}`;
+        const response = await accountantService.update(selectedAccountant.cod_ctd, {
+          ...formData,
+          ced_ctd: nuevaCedula,
+        });
         if (isApiError(response)) throw new Error(response.statusText);
         fetchAccountants();
         setIsEditModalOpen(false);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al editar cuentadante: " + message);
+        setWarningMessage(message);
+        setIsWarningModalOpen(true);
       }
     }
   };
@@ -130,7 +149,7 @@ export function useAccountants() {
   const handleDelete = async () => {
     if (selectedAccountant) {
       try {
-        const response = await accountantService.delete(selectedAccountant.ced_ctd);
+        const response = await accountantService.delete(selectedAccountant.cod_ctd);
         if (isApiError(response)) throw new Error(response.statusText);
         fetchAccountants();
         setIsDeleteModalOpen(false);
@@ -165,6 +184,10 @@ export function useAccountants() {
     isDeleteBlockedOpen,
     setIsDeleteBlockedOpen,
     deleteBlockedMessage,
+    isWarningModalOpen,
+    setIsWarningModalOpen,
+    warningMessage,
+    setWarningMessage,
     formData,
     openCreateModal,
     handleCreate,

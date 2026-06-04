@@ -1,4 +1,5 @@
 export interface AccountantItem {
+    cod_ctd: number;
     ced_ctd: string;
     ape_ctd: string;
     nom_ctd: string;

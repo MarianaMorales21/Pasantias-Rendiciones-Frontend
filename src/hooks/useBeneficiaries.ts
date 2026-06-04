@@ -4,6 +4,7 @@ import { BeneficiaryItem } from "../types/beneficiary";
 import { isApiError } from "../helpers/helpHttp";
 
 const emptyForm: BeneficiaryItem = {
+  cod_ben: 0,
   rif_ben: "",
   nom_ben: "",
   dir_ben: "",
@@ -35,6 +36,8 @@ export function useBeneficiaries() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
   const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
   const [formData, setFormData] = useState<BeneficiaryItem>(emptyForm);
 
   // Estado separado para el prefijo del RIF y el número
@@ -91,13 +94,21 @@ export function useBeneficiaries() {
     const rifCompleto = buildRif();
     // Validaciones según prefijo
     if (rifPrefix === "V") {
-      if (!/^\d{7,8}$/.test(rifNum)) {
-        alert("La cédula debe tener entre 7 y 8 dígitos numéricos.");
+      if (!rifNum.trim()) {
+        setFieldErrors({ rifNum: "Este campo es requerido" });
+        return;
+      }
+      if (!/^\d{1,8}$/.test(rifNum.trim())) {
+        setFieldErrors({ rifNum: "La cédula debe tener máximo 8 dígitos numéricos." });
         return;
       }
     } else {
-      if (!/^\d+-\d$/.test(rifNum)) {
-        alert("Para el tipo G o J, el número debe tener el último dígito separado por un guion. Ej: 12345678-1");
+      if (!rifNum.trim()) {
+        setFieldErrors({ rifNum: "Este campo es requerido" });
+        return;
+      }
+      if (!/^\d+-\d$/.test(rifNum.trim())) {
+        setFieldErrors({ rifNum: "Para el tipo G o J, el número debe tener el último dígito separado por un guion. Ej: 12345678-1" });
         return;
       }
     }
@@ -108,7 +119,8 @@ export function useBeneficiaries() {
       setIsCreateModalOpen(false);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      alert("Error al crear beneficiario: " + message);
+      setWarningMessage(message);
+      setIsWarningModalOpen(true);
     }
   };
 
@@ -133,14 +145,17 @@ export function useBeneficiaries() {
       if (!validateBeneficiaryFields()) return;
       const rifCompleto = buildRif();
       try {
-        const { rif_ben, ...data } = formData;
-        const response = await beneficiaryService.update(rifCompleto, data);
+        const response = await beneficiaryService.update(selectedBeneficiary.cod_ben, {
+          ...formData,
+          rif_ben: rifCompleto,
+        });
         if (isApiError(response)) throw new Error(response.statusText);
         fetchBeneficiaries();
         setIsEditModalOpen(false);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al editar beneficiario: " + message);
+        setWarningMessage(message);
+        setIsWarningModalOpen(true);
       }
     }
   };
@@ -153,7 +168,7 @@ export function useBeneficiaries() {
   const handleDelete = async () => {
     if (selectedBeneficiary) {
       try {
-        const response = await beneficiaryService.delete(selectedBeneficiary.rif_ben);
+        const response = await beneficiaryService.delete(selectedBeneficiary.cod_ben);
         if (isApiError(response)) throw new Error(response.statusText);
         fetchBeneficiaries();
         setIsDeleteModalOpen(false);
@@ -188,6 +203,10 @@ export function useBeneficiaries() {
     isDeleteBlockedOpen,
     setIsDeleteBlockedOpen,
     deleteBlockedMessage,
+    isWarningModalOpen,
+    setIsWarningModalOpen,
+    warningMessage,
+    setWarningMessage,
     formData,
     openCreateModal,
     handleCreate,

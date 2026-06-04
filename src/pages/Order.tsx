@@ -26,7 +26,7 @@ import { departureItem } from "../types/departure";
 
 // ─── Tipos e Interfaces ──────────────────────────────────────────────────────
 
-type OrderFormData = Omit<OrderItem, "cod_opg" | "nom_ctd" | "ape_ctd" | "nom_sta" | "num_par" | "nom_par">;
+type OrderFormData = Omit<OrderItem, "cod_opg" | "nom_ctd" | "ape_ctd" | "ced_ctd" | "nom_sta" | "num_par" | "nom_par">;
 
 interface OrderFormProps {
   formData: OrderFormData;
@@ -39,14 +39,14 @@ interface OrderFormProps {
 
 const emptyForm: OrderFormData = {
   num_opg: 0,
-  ced_opg: "",
+  ctd_opg: 0,
   fec_opg: new Date().toISOString().split("T")[0],
   fco_opg: "",
   fdc_opg: new Date().toISOString().split("T")[0],
   dcr_opg: "",
   mon_opg: "",
   con_opg: "",
-  sta_opg: 1, // Por defecto solemos usar el ID 1 o el que sea 'Pendiente'
+  sta_opg: 1,
   par_opg: 0,
 };
 
@@ -95,18 +95,18 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas, fieldEr
           <Label htmlFor="f-cuentadante">Cuentadante</Label>
           <select
             id="f-cuentadante"
-            value={formData.ced_opg}
-            onChange={(e) => onChange("ced_opg", e.target.value)}
-            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors.ced_opg ? "border-red-500" : "border-gray-300"}`}
+            value={formData.ctd_opg}
+            onChange={(e) => onChange("ctd_opg", parseInt(e.target.value) || 0)}
+            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors.ctd_opg ? "border-red-500" : "border-gray-300"}`}
           >
-            <option value="">Seleccione un cuentadante</option>
+            <option value={0}>Seleccione un cuentadante</option>
             {cuentadantes.map((c) => (
-              <option key={c.ced_ctd} value={c.ced_ctd}>
+              <option key={c.cod_ctd} value={c.cod_ctd}>
                 {c.nom_ctd} {c.ape_ctd} ({c.ced_ctd})
               </option>
             ))}
           </select>
-          {fieldErrors.ced_opg && (
+          {fieldErrors.ctd_opg && (
             <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}
         </div>
@@ -241,6 +241,10 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas, fieldEr
 export default function Order() {
   const { data: orders, isLoading, fieldErrors, clearFieldErrors, handleCreate: apiCreateOrder, handleUpdate: apiUpdateOrder, handleDelete: apiDeleteOrder } = useOrders();
   const { accountantData } = useAccountants();
+  const activeCuentadantes = useMemo(
+    () => (accountantData || []).filter((c) => c.sta_ctd === 1 || c.nom_sta === "Activo"),
+    [accountantData]
+  );
   const { data: allStates } = useStateData();
   const states = allStates.filter(
     (s) => s.nom_sta === "Pagado" || s.nom_sta === "Pendiente"
@@ -266,7 +270,7 @@ export default function Order() {
         o.num_opg?.toString().includes(q) ||
         o.nom_ctd?.toLowerCase().includes(q) ||
         o.ape_ctd?.toLowerCase().includes(q) ||
-        o.ced_opg?.includes(q) ||
+        o.ced_ctd?.includes(q) ||
         o.fec_opg?.includes(q)
     );
   }, [orders, search]);
@@ -289,8 +293,8 @@ export default function Order() {
   const openEditModal = (order: OrderItem) => {
     clearFieldErrors();
     setSelectedOrder(order);
-    const { num_opg, ced_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg } = order;
-    setFormData({ num_opg, ced_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg });
+    const { num_opg, ctd_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg } = order;
+    setFormData({ num_opg, ctd_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg });
     setIsEditModalOpen(true);
   };
 
@@ -355,7 +359,7 @@ export default function Order() {
               {item.nom_ctd} {item.ape_ctd}
             </span>
             <span className="block text-gray-500 dark:text-gray-400 text-xs">
-              V-{item.ced_opg}
+              {item.ced_ctd}
             </span>
           </div>
         </div>
@@ -470,7 +474,7 @@ export default function Order() {
         <OrderForm
           formData={formData}
           onChange={handleFieldChange}
-          cuentadantes={accountantData || []}
+          cuentadantes={activeCuentadantes}
           states={states || []}
           partidas={partidas || []}
           fieldErrors={fieldErrors}
@@ -491,7 +495,7 @@ export default function Order() {
         <OrderForm
           formData={formData}
           onChange={handleFieldChange}
-          cuentadantes={accountantData || []}
+          cuentadantes={activeCuentadantes}
           states={states || []}
           partidas={partidas || []}
           fieldErrors={fieldErrors}

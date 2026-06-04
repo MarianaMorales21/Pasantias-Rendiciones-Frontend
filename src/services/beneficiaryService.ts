@@ -8,8 +8,8 @@ const url = `${API_BASE_URL}/beneficiary`;
 
 export const beneficiaryService = {
     getAll: () => api.get(url) as Promise<ApiResponse<BeneficiaryItem[]>>,
-    getOne: (rif: string) => api.get(`${url}/${rif}`) as Promise<ApiResponse<BeneficiaryItem>>,
+    getOne: (cod_ben: number) => api.get(`${url}/${cod_ben}`) as Promise<ApiResponse<BeneficiaryItem>>,
     create: (data: Partial<BeneficiaryItem>) => api.post(url, {body: data}) as Promise<ApiResponse<BeneficiaryItem>>,
-    update: (rif: string, data: Partial<BeneficiaryItem>) => api.put(`${url}/${rif}`, { body: data }) as Promise<ApiResponse<BeneficiaryItem>>,
-    delete: (rif: string) => api.del(`${url}/${rif}`) as Promise<ApiResponse<{message: string}>>,
+    update: (cod_ben: number, data: Partial<BeneficiaryItem>) => api.put(`${url}/${cod_ben}`, { body: data }) as Promise<ApiResponse<BeneficiaryItem>>,
+    delete: (cod_ben: number) => api.del(`${url}/${cod_ben}`) as Promise<ApiResponse<{message: string}>>,
 };

@@ -27,6 +27,8 @@ export function usePrograms() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
   const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
   const [formData, setFormData] = useState<ProgramsItem>(emptyForm);
 
   // --- Carga de Datos ---
@@ -86,7 +88,8 @@ export function usePrograms() {
       return response;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      alert("Error al crear programa: " + message);
+      setWarningMessage(message);
+      setIsWarningModalOpen(true);
       return null;
     } finally {
       setIsLoading(false);
@@ -117,7 +120,8 @@ export function usePrograms() {
         return true;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al editar programa: " + message);
+        setWarningMessage(message);
+        setIsWarningModalOpen(true);
         return false;
       } finally {
         setIsLoading(false);
@@ -173,6 +177,10 @@ export function usePrograms() {
     isDeleteBlockedOpen,
     setIsDeleteBlockedOpen,
     deleteBlockedMessage,
+    isWarningModalOpen,
+    setIsWarningModalOpen,
+    warningMessage,
+    setWarningMessage,
     formData,
     openCreateModal,
     handleCreate,

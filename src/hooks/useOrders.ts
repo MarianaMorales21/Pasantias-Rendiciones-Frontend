@@ -14,7 +14,7 @@ export const useOrders = () => {
     const validateOrderFields = (formData: Partial<OrderItem>): boolean => {
         const errors: Record<string, string> = {};
         if (!formData.num_opg) errors.num_opg = "Este campo es requerido";
-        if (!formData.ced_opg) errors.ced_opg = "Este campo es requerido";
+        if (!formData.ctd_opg) errors.ctd_opg = "Este campo es requerido";
         if (!formData.fec_opg) errors.fec_opg = "Este campo es requerido";
         if (!formData.fdc_opg) errors.fdc_opg = "Este campo es requerido";
         if (!formData.dcr_opg) errors.dcr_opg = "Este campo es requerido";

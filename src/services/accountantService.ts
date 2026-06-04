@@ -7,8 +7,8 @@ const url = `${API_BASE_URL}/accountant`;
 
 export const accountantService = {
     getAll: () => api.get(url) as Promise<ApiResponse<AccountantItem[]>>,
-    getOne: (cedula: string) => api.get(`${url}/${cedula}`) as Promise<ApiResponse<AccountantItem>>,
+    getOne: (cod_ctd: number) => api.get(`${url}/${cod_ctd}`) as Promise<ApiResponse<AccountantItem>>,
     create: (data: Partial<AccountantItem>) => api.post(url, { body: data }) as Promise<ApiResponse<AccountantItem>>,
-    update: (cedula: string, data: Partial<AccountantItem>) => api.put(`${url}/${cedula}`, { body: data }) as Promise<ApiResponse<AccountantItem>>,
-    delete: (cedula: string) => api.del(`${url}/${cedula}`) as Promise<ApiResponse<{ message: string }>>,
+    update: (cod_ctd: number, data: Partial<AccountantItem>) => api.put(`${url}/${cod_ctd}`, { body: data }) as Promise<ApiResponse<AccountantItem>>,
+    delete: (cod_ctd: number) => api.del(`${url}/${cod_ctd}`) as Promise<ApiResponse<{ message: string }>>,
 };

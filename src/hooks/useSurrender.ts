@@ -43,7 +43,7 @@ export const emptyNdbForm: DebitNoteItem = {
     cod_ndb: 0,
     num_ndb: "",
     fec_ndb: new Date().toISOString().split("T")[0],
-    rif_ndb: "",
+    ben_ndb: 0,
     rnd_ndb: 0,
     con_ndb: "",
     mon_ndb: 0,
@@ -489,7 +489,7 @@ export function useSurrender() {
         const ndbErrors: Record<string, string> = {};
         if (!ndbFormData.num_ndb) ndbErrors.ndb_num_ndb = "Este campo es requerido";
         if (!ndbFormData.fec_ndb) ndbErrors.ndb_fec_ndb = "Este campo es requerido";
-        if (!ndbFormData.rif_ndb) ndbErrors.ndb_rif_ndb = "Este campo es requerido";
+        if (!ndbFormData.ben_ndb) ndbErrors.ndb_ben_ndb = "Este campo es requerido";
         if (!ndbFormData.pro_ndb) ndbErrors.ndb_pro_ndb = "Este campo es requerido";
         if (!ndbFormData.ban_ndb) ndbErrors.ndb_ban_ndb = "Este campo es requerido";
         if (!ndbFormData.ref_ndb) ndbErrors.ndb_ref_ndb = "Este campo es requerido";
@@ -575,7 +575,7 @@ export function useSurrender() {
         const updNdbErrors: Record<string, string> = {};
         if (!ndbFormData.num_ndb) updNdbErrors.ndb_num_ndb = "Este campo es requerido";
         if (!ndbFormData.fec_ndb) updNdbErrors.ndb_fec_ndb = "Este campo es requerido";
-        if (!ndbFormData.rif_ndb) updNdbErrors.ndb_rif_ndb = "Este campo es requerido";
+        if (!ndbFormData.ben_ndb) updNdbErrors.ndb_ben_ndb = "Este campo es requerido";
         if (!ndbFormData.pro_ndb) updNdbErrors.ndb_pro_ndb = "Este campo es requerido";
         if (!ndbFormData.ban_ndb) updNdbErrors.ndb_ban_ndb = "Este campo es requerido";
         if (!ndbFormData.ref_ndb) updNdbErrors.ndb_ref_ndb = "Este campo es requerido";

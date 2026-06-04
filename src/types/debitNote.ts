@@ -2,8 +2,8 @@ export interface DebitNoteItem {
     cod_ndb: number;
     num_ndb: string;
     fec_ndb: string;
-    rif_ndb: string;
-    rnd_ndb: number; // Cambio de ren_ndb a rnd_ndb según DDL
+    ben_ndb: number;
+    rnd_ndb: number;
     con_ndb: string;
     mon_ndb: number;
     ban_ndb: string;
@@ -16,6 +16,7 @@ export interface DebitNoteItem {
     has_retention?: boolean; // UI specific flag
     // Campos joined
     nom_ben?: string;
+    rif_ben?: string;
     num_rnd?: string;
-    total_details?: number; // Suma de mon_drn de los detalles de esta nota
+    total_details?: number;
 }

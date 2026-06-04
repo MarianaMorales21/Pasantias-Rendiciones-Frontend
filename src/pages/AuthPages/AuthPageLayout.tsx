@@ -14,16 +14,16 @@ export default function AuthLayout({
         <img
           src="/images/logo/fundes.png"
           alt=""
-          className="w-[600px] h-auto object-contain opacity-[0.22] blur-sm"
+          className="w-[300px] sm:w-[600px] h-auto object-contain opacity-[0.22] blur-sm"
         />
       </div>
 
-      {/* Logo secundario decorativo esquina derecha */}
-      <div className="absolute bottom-0 right-0 -mr-24 -mb-24 pointer-events-none select-none">
+      {/* Logo secundario decorativo esquina derecha — oculto en mobile */}
+      <div className="absolute bottom-0 right-0 -mr-24 -mb-24 pointer-events-none select-none hidden sm:block">
         <img
           src="/images/logo/fundes.png"
           alt=""
-          className="w-[400px] h-auto object-contain opacity-[0.20] blur-md rotate-[15deg]"
+          className="w-[300px] sm:w-[400px] h-auto object-contain opacity-[0.20] blur-md rotate-[15deg]"
         />
       </div>
 

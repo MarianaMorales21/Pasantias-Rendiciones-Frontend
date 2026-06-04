@@ -10,6 +10,7 @@ import Badge from "../components/ui/badge/Badge";
 import { Modal } from "../components/ui/modal/index";
 import { useBeneficiaries } from "../hooks/useBeneficiaries";
 import { useStateData } from "../hooks/useStateData";
+import { useAuth } from "../context/AuthContext";
 import { BeneficiaryItem } from "../types/beneficiary";
 import { StateItem } from "../types/state";
 import {
@@ -33,6 +34,8 @@ interface BeneficiaryFormProps {
 }
 
 function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPrefix, onRifPrefixChange, rifNum, onRifNumChange, fieldErrors = {} }: BeneficiaryFormProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.rol_usu === 1;
   return (
     <Modal.Body className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -43,7 +46,7 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
               id="f-rif-prefix"
               value={rifPrefix}
               onChange={(e) => onRifPrefixChange(e.target.value as "V" | "G" | "J")}
-              disabled={editMode}
+              disabled={editMode && !isAdmin}
               className="w-24 h-11 rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
             >
               <option value="V">V</option>
@@ -56,7 +59,7 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
                 placeholder={rifPrefix === "V" ? "Ej: 12345678" : "Ej: 12345678-1"}
                 value={rifNum}
                 onChange={(e) => onRifNumChange(e.target.value)}
-                disabled={editMode}
+                disabled={editMode && !isAdmin}
                 className={fieldErrors.rifNum ? "border-red-500" : ""}
               />
             </div>
@@ -100,20 +103,23 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
             <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="f-estado">Estado</Label>
-          <select
-            id="f-estado"
-            value={formData.sta_ben}
-            onChange={(e) => onChange("sta_ben", parseInt(e.target.value))}
-            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-          >
-            <option value={0}>Seleccione estado</option>
-            {states.map((s) => (
-              <option key={s.cod_sta} value={s.cod_sta}>{s.nom_sta}</option>
-            ))}
-          </select>
-        </div>
+        {(!editMode && !isAdmin) ? null : (
+          <div>
+            <Label htmlFor="f-estado">Estado</Label>
+            <select
+              id="f-estado"
+              value={formData.sta_ben}
+              onChange={(e) => onChange("sta_ben", parseInt(e.target.value))}
+              disabled={editMode && !isAdmin}
+              className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value={0}>Seleccione estado</option>
+              {states.map((s) => (
+                <option key={s.cod_sta} value={s.cod_sta}>{s.nom_sta}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </Modal.Body>
   );
@@ -140,6 +146,9 @@ export default function Beneficiary() {
     isDeleteBlockedOpen,
     setIsDeleteBlockedOpen,
     deleteBlockedMessage,
+    isWarningModalOpen,
+    setIsWarningModalOpen,
+    warningMessage,
     formData,
     openCreateModal,
     handleCreate,
@@ -361,6 +370,34 @@ export default function Beneficiary() {
           <Button
             className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors w-full"
             onClick={() => setIsDeleteBlockedOpen(false)}
+          >
+            Entendido
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* --- MODAL WARNING --- */}
+      <Modal isOpen={isWarningModalOpen} onClose={() => setIsWarningModalOpen(false)}>
+        <Modal.Header>Aviso</Modal.Header>
+        <Modal.Body>
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20">
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              Operación no permitida
+            </h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {warningMessage}
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors w-full"
+            onClick={() => setIsWarningModalOpen(false)}
           >
             Entendido
           </Button>

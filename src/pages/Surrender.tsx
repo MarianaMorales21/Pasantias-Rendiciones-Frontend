@@ -117,6 +117,14 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
 // ─── Formulario: Nota de Débito ───────────────────────────────────────────────
 function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   const { ndbFormData, setNdbFormData, beneficiaries, programs, selectedOpg, selectedRnd, selectedNdb, opgDebitNotes, fieldErrors } = hook;
+  const activeBeneficiaries = useMemo(
+    () => beneficiaries.filter((b) => b.sta_ben === 1 || b.nom_sta === "Activo"),
+    [beneficiaries]
+  );
+  const activePrograms = useMemo(
+    () => programs.filter((p) => p.sta_pro === 1 || p.nom_sta === "Activo"),
+    [programs]
+  );
   const onChange = (field: keyof typeof ndbFormData, value: string | number) =>
     setNdbFormData({ ...ndbFormData, [field]: value });
 
@@ -184,15 +192,15 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
       </div>
       <div>
         <Label htmlFor="ndb-ben">Beneficiario</Label>
-        <select id="ndb-ben" value={ndbFormData.rif_ndb}
-          onChange={(e) => onChange("rif_ndb", e.target.value)}
-          className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.ndb_rif_ndb ? "border-red-500" : "border-gray-300"}`}>
-          <option value="">Seleccione beneficiario</option>
-          {beneficiaries.map((b) => (
-            <option key={b.rif_ben} value={b.rif_ben}>{b.rif_ben} — {b.nom_ben}</option>
+        <select id="ndb-ben" value={ndbFormData.ben_ndb}
+          onChange={(e) => onChange("ben_ndb", parseInt(e.target.value) || 0)}
+          className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.ndb_ben_ndb ? "border-red-500" : "border-gray-300"}`}>
+          <option value={0}>Seleccione beneficiario</option>
+          {activeBeneficiaries.map((b) => (
+            <option key={b.cod_ben} value={b.cod_ben}>{b.rif_ben} — {b.nom_ben}</option>
           ))}
         </select>
-        {fieldErrors?.ndb_rif_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
+        {fieldErrors?.ndb_ben_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
       </div>
       <div>
         <Label htmlFor="ndb-pro">Programa</Label>
@@ -200,7 +208,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
           onChange={(e) => onChange("pro_ndb", e.target.value)}
           className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.ndb_pro_ndb ? "border-red-500" : "border-gray-300"}`}>
           <option value="">Seleccione programa</option>
-          {programs.map((pro) => (
+          {activePrograms.map((pro) => (
             <option key={pro.cod_pro} value={pro.cod_pro}>{pro.nom_pro}</option>
           ))}
         </select>
@@ -720,8 +728,7 @@ export default function Surrender() {
 
             {selectedRnd && (
               <ComponentCard title={`Notas de Débito — RND #${selectedRnd.num_rnd}`}>
-                <div className="mb-4">
-                  {/* Ícono PlusIcon ajustado para visibilidad */}
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <Button
                     size="md"
                     variant="primary"
@@ -735,6 +742,31 @@ export default function Surrender() {
                   >
                     <span>Nueva Nota de Débito</span>
                   </Button>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-500">Total Notas de Débito:</span>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      Bs. {totalSpent.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500">Total Orden de Pago:</span>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      Bs. {Number(selectedOpg.mon_opg).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                    </span>
+                    {totalReintegros > 0 && (
+                      <>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-gray-500">Reintegros:</span>
+                        <span className="font-semibold text-green-600">
+                          - Bs. {totalReintegros.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                        </span>
+                      </>
+                    )}
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500">Queda por rendir:</span>
+                    <span className={`font-bold ${netSpent >= Number(selectedOpg.mon_opg) ? "text-green-600" : "text-amber-600"}`}>
+                      Bs. {Math.max(0, Number(selectedOpg.mon_opg) - netSpent).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
                 <DataTable columns={ndbColumns} data={debitNotes} emptyMessage="No hay notas de débito registradas para esta rendición." />
               </ComponentCard>
@@ -742,12 +774,32 @@ export default function Surrender() {
 
             {selectedNdb && (
               <ComponentCard title={`Detalles de Gasto — Nota #${selectedNdb.num_ndb}`}>
-                <div className="mb-4">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <Button size="md"
                     variant="primary"
                     className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
                     startIcon={<PlusIcon style={{ width: '16px', height: '16px', display: 'block' }}
                       className="text-white fill-current" />} onClick={() => handleCreateClick('drn')}>Agregar Detalle</Button>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-500">Total gastado:</span>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      Bs. {details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500">Monto Nota de Débito:</span>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      Bs. {Number(selectedNdb.mon_ndb).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500">Queda por agregar:</span>
+                    <span className={`font-bold ${
+                      details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0) >= Number(selectedNdb.mon_ndb)
+                        ? "text-green-600"
+                        : "text-amber-600"
+                    }`}>
+                      Bs. {Math.max(0, Number(selectedNdb.mon_ndb) - details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
                 <DataTable columns={drnColumns} data={details} emptyMessage="No hay detalles de gasto registrados para esta nota de débito." />
               </ComponentCard>
