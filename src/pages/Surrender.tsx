@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import ComponentCard from "../components/common/ComponentCard";
 import PageMeta from "../components/common/PageMeta";
@@ -474,6 +474,16 @@ export default function Surrender() {
   const [isFullyRenderedModalOpen, setIsFullyRenderedModalOpen] = useState(false);
   const [selectedYearFilter, setSelectedYearFilter] = useState<string>("all");
 
+  const detailsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedNdb) {
+      requestAnimationFrame(() => {
+        detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [selectedNdb]);
+
   const yearsOptions = useMemo(() => {
     const yearsSet = new Set<number>();
     orders.forEach((o) => {
@@ -768,7 +778,7 @@ export default function Surrender() {
             )}
 
             {selectedNdb && (
-              <ComponentCard title={`Detalles de Gasto — Nota #${selectedNdb.num_ndb}`}>
+              <ComponentCard ref={detailsRef} title={`Detalles de Gasto — Nota #${selectedNdb.num_ndb}`}>
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <Button size="md"
                     variant="primary"
