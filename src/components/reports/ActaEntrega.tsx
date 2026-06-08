@@ -23,8 +23,9 @@ export function ActaPreview({ data, authorities }: { data: FullDetailedReport, a
 
   const formatName = (auth?: AuthorityItem, fallback: string = "") => {
     if (!auth) return fallback;
+    const abr = auth.abr_ran || "Lcda.";
     const name = `${auth.nom_aut} ${auth.ape_aut}`.toUpperCase();
-    return `Lcda. ${name.replace("LCDA. ", "").replace("LCDA ", "")}`;
+    return `${abr} ${name.replace("LCDA. ", "").replace("LCDA ", "")}`;
   };
 
   return (

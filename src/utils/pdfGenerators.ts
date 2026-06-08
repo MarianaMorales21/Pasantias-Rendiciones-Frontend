@@ -377,8 +377,9 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
   doc.text("Ciudadana", 15, y); y += 5;
   doc.setFont("times", "bolditalic");
 
+  const abrJefe = jefeGobernacion?.abr_ran || "Lcda.";
   const nameRec = jefeGobernacion ? `${jefeGobernacion.nom_aut} ${jefeGobernacion.ape_aut}`.toUpperCase() : "MILAGROS DEL VALLE RAMOS GARCÍA";
-  const destName = `Lcda. ${nameRec.replace("LCDA. ", "").replace("LCDA ", "")}`;
+  const destName = `${abrJefe} ${nameRec.replace("LCDA. ", "").replace("LCDA ", "")}`;
   const destCargo = jefeGobernacion ? jefeGobernacion.ran_aut.toUpperCase() : "DIRECTORA DE ADMINISTRACIÓN Y FINANZAS";
   const destInst = "GOBERNACIÓN DEL ESTADO TÁCHIRA";
 
@@ -535,8 +536,10 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
   doc.setFont("times", "bolditalic");
   doc.setFontSize(12);
 
-  const presName = presidenta ? `Lcda. ${presidenta.nom_aut} ${presidenta.ape_aut}`.toUpperCase() : "LCDA. YARITZA ISBEL PEÑA DUARTE";
-  const adminName = administradora ? `Lcda. ${administradora.nom_aut} ${administradora.ape_aut}`.toUpperCase() : "LCDA. DECCY C. PERNÍA LEAL";
+  const abrPres = presidenta?.abr_ran || "Lcda.";
+  const abrAdmin = administradora?.abr_ran || "Lcda.";
+  const presName = presidenta ? `${abrPres} ${presidenta.nom_aut} ${presidenta.ape_aut}`.toUpperCase() : "LCDA. YARITZA ISBEL PEÑA DUARTE";
+  const adminName = administradora ? `${abrAdmin} ${administradora.nom_aut} ${administradora.ape_aut}`.toUpperCase() : "LCDA. DECCY C. PERNÍA LEAL";
 
   doc.text(presName, presCenterX, signY + 5, { align: "center" });
   doc.text(adminName, adminCenterX, signY + 5, { align: "center" });
