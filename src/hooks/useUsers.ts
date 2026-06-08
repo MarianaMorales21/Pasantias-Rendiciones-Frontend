@@ -79,11 +79,6 @@ export function useUsers() {
       setFieldErrors(errors);
       return;
     }
-    // Validar formato cédula (solo números, 6-8 dígitos)
-    if (!/^\d{6,8}$/.test(formData.ced_usu.trim())) {
-      alert("La cédula debe contener solo números y tener entre 6 y 8 dígitos.");
-      return;
-    }
     // Validar formato email
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.ema_usu.trim())) {
       alert("El correo electrónico no tiene un formato válido.");

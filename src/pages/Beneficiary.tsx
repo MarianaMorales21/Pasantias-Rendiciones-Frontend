@@ -58,7 +58,19 @@ function BeneficiaryForm({ formData, onChange, editMode = false, states, rifPref
                 id="f-rif"
                 placeholder={rifPrefix === "V" ? "Ej: 12345678" : "Ej: 12345678-1"}
                 value={rifNum}
-                onChange={(e) => onRifNumChange(e.target.value)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (rifPrefix === "V") {
+                    onRifNumChange(raw.replace(/\D/g, "").slice(0, 8));
+                  } else {
+                    const digits = raw.replace(/\D/g, "");
+                    if (digits.length <= 8) {
+                      onRifNumChange(digits);
+                    } else {
+                      onRifNumChange(digits.slice(0, 8) + "-" + digits.slice(8, 9));
+                    }
+                  }
+                }}
                 disabled={editMode && !isAdmin}
                 className={fieldErrors.rifNum ? "border-red-500" : ""}
               />

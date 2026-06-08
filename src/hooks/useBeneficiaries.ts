@@ -25,6 +25,15 @@ export function useBeneficiaries() {
     if (!rifNum) errors.rifNum = "Este campo es requerido";
     if (!formData.nom_ben) errors.nom_ben = "Este campo es requerido";
     if (!formData.dir_ben) errors.dir_ben = "Este campo es requerido";
+    if (rifPrefix === "V") {
+      if (rifNum && !/^\d{1,8}$/.test(rifNum.trim())) {
+        errors.rifNum = "La cédula debe tener máximo 8 dígitos numéricos.";
+      }
+    } else {
+      if (rifNum && !/^\d{8}-\d$/.test(rifNum.trim())) {
+        errors.rifNum = "Para G o J: exactamente 8 dígitos + guion + dígito final. Ej: 12345678-1";
+      }
+    }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -92,26 +101,6 @@ export function useBeneficiaries() {
   const handleCreate = async () => {
     if (!validateBeneficiaryFields()) return;
     const rifCompleto = buildRif();
-    // Validaciones según prefijo
-    if (rifPrefix === "V") {
-      if (!rifNum.trim()) {
-        setFieldErrors({ rifNum: "Este campo es requerido" });
-        return;
-      }
-      if (!/^\d{1,8}$/.test(rifNum.trim())) {
-        setFieldErrors({ rifNum: "La cédula debe tener máximo 8 dígitos numéricos." });
-        return;
-      }
-    } else {
-      if (!rifNum.trim()) {
-        setFieldErrors({ rifNum: "Este campo es requerido" });
-        return;
-      }
-      if (!/^\d+-\d$/.test(rifNum.trim())) {
-        setFieldErrors({ rifNum: "Para el tipo G o J, el número debe tener el último dígito separado por un guion. Ej: 12345678-1" });
-        return;
-      }
-    }
     try {
       const response = await beneficiaryService.create({ ...formData, rif_ben: rifCompleto });
       if (isApiError(response)) throw new Error(response.statusText);

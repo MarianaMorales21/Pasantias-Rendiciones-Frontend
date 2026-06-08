@@ -42,7 +42,7 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <div>
           <Label htmlFor="rnd-num">Nro. Rendición</Label>
           <Input id="rnd-num" placeholder="Ej: 001" value={rndFormData.num_rnd}
-            onChange={(e) => onChange("num_rnd", e.target.value)}
+            onChange={(e) => onChange("num_rnd", e.target.value.replace(/\D/g, ""))}
             className={fieldErrors?.rnd_num_rnd ? "border-red-500" : ""} />
           {fieldErrors?.rnd_num_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
@@ -128,6 +128,9 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   const onChange = (field: keyof typeof ndbFormData, value: string | number) =>
     setNdbFormData({ ...ndbFormData, [field]: value });
 
+  const today = new Date().toISOString().split("T")[0];
+  const futureDate = ndbFormData.fec_ndb && ndbFormData.fec_ndb > today;
+
   const bankOptions = [
     "BANCO DE VENEZUELA", "BANESCO", "BANCO MERCANTIL", "BANCO PROVINCIAL",
     "BANCO NACIONAL DE CRÉDITO (BNC)", "BANCARIBE", "BANCO EXTERIOR", "BANPLUS",
@@ -178,7 +181,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <div>
           <Label htmlFor="ndb-num">Nro. Nota de Débito</Label>
           <Input id="ndb-num" placeholder="Ej: 1234 (se agregará ND- automáticamente)" value={ndbFormData.num_ndb}
-            onChange={(e) => onChange("num_ndb", e.target.value)}
+            onChange={(e) => onChange("num_ndb", e.target.value.replace(/\D/g, ""))}
             className={fieldErrors?.ndb_num_ndb ? "border-red-500" : ""} />
           {fieldErrors?.ndb_num_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
@@ -186,8 +189,9 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
           <Label htmlFor="ndb-fec">Fecha</Label>
           <Input id="ndb-fec" type="date" value={ndbFormData.fec_ndb?.split("T")[0] || ""}
             onChange={(e) => onChange("fec_ndb", e.target.value)}
-            className={fieldErrors?.ndb_fec_ndb ? "border-red-500" : ""} />
-          {fieldErrors?.ndb_fec_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
+            className={futureDate || fieldErrors?.ndb_fec_ndb ? "border-red-500" : ""} />
+          {futureDate && <p className="text-xs text-red-500 mt-1 font-medium">La fecha no puede ser posterior a hoy.</p>}
+          {fieldErrors?.ndb_fec_ndb && !futureDate && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
       </div>
       <div>
@@ -230,7 +234,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <div>
           <Label htmlFor="ndb-ref">Referencia</Label>
           <Input id="ndb-ref" placeholder="Ej: 98765432" value={ndbFormData.ref_ndb}
-            onChange={(e) => onChange("ref_ndb", e.target.value)}
+            onChange={(e) => onChange("ref_ndb", e.target.value.replace(/\D/g, ""))}
             className={fieldErrors?.ndb_ref_ndb ? "border-red-500" : ""} />
           {fieldErrors?.ndb_ref_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
@@ -752,15 +756,6 @@ export default function Surrender() {
                     <span className="font-semibold text-gray-800 dark:text-white">
                       Bs. {Number(selectedOpg.mon_opg).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
                     </span>
-                    {totalReintegros > 0 && (
-                      <>
-                        <span className="text-gray-400">|</span>
-                        <span className="text-gray-500">Reintegros:</span>
-                        <span className="font-semibold text-green-600">
-                          - Bs. {totalReintegros.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                        </span>
-                      </>
-                    )}
                     <span className="text-gray-400">|</span>
                     <span className="text-gray-500">Queda por rendir:</span>
                     <span className={`font-bold ${netSpent >= Number(selectedOpg.mon_opg) ? "text-green-600" : "text-amber-600"}`}>
@@ -786,18 +781,18 @@ export default function Surrender() {
                       Bs. {details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
                     </span>
                     <span className="text-gray-400">|</span>
-                    <span className="text-gray-500">Monto Nota de Débito:</span>
+                    <span className="text-gray-500">Monto Nota de Débito (Subtotal):</span>
                     <span className="font-semibold text-gray-800 dark:text-white">
-                      Bs. {Number(selectedNdb.mon_ndb).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                      Bs. {Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
                     </span>
                     <span className="text-gray-400">|</span>
                     <span className="text-gray-500">Queda por agregar:</span>
                     <span className={`font-bold ${
-                      details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0) >= Number(selectedNdb.mon_ndb)
+                      details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0) >= Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb)
                         ? "text-green-600"
                         : "text-amber-600"
                     }`}>
-                      Bs. {Math.max(0, Number(selectedNdb.mon_ndb) - details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                      Bs. {Math.max(0, Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb) - details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>

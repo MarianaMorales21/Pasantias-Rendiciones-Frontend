@@ -161,7 +161,7 @@ function AuthorityBlock({
                   <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Cédula</label>
                   <Input
                     value={formData.ced_aut}
-                    onChange={(e) => setFormData({ ...formData, ced_aut: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, ced_aut: e.target.value.replace(/\D/g, "").slice(0, 8) })}
                     placeholder="Ej: 12345678"
                   />
                 </div>

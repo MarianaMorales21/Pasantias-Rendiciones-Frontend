@@ -37,14 +37,24 @@ function AccountantForm({ formData, onChange, editMode = false, states, fieldErr
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="f-cedula">Cédula</Label>
-          <Input
-            id="f-cedula"
-            placeholder="Ej: 12345678 (se agregará V- automáticamente)"
-            value={formData.ced_ctd}
-            onChange={(e) => onChange("ced_ctd", e.target.value)}
-            disabled={editMode && !isAdmin}
-            className={fieldErrors.ced_ctd ? "border-red-500" : ""}
-          />
+          <div className="flex gap-2">
+            <span className="inline-flex items-center px-3 h-11 rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300">
+              V-
+            </span>
+            <div className="flex-1">
+              <Input
+                id="f-cedula"
+                placeholder="Ej: 12345678"
+                value={formData.ced_ctd.replace(/^V-?/, "")}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  onChange("ced_ctd", digits ? `V-${digits}` : "");
+                }}
+                disabled={editMode && !isAdmin}
+                className={fieldErrors.ced_ctd ? "border-red-500" : ""}
+              />
+            </div>
+          </div>
           {fieldErrors.ced_ctd && (
             <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}

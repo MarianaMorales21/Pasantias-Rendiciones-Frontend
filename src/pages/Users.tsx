@@ -54,14 +54,24 @@ function UserForm({ formData, onChange, editMode = false, states, fieldErrors = 
         </div>
         <div>
           <Label htmlFor="f-cedula">Cédula</Label>
-          <Input
-            id="f-cedula"
-            placeholder="Ej: 12345678"
-            value={formData.ced_usu}
-            onChange={(e) => onChange("ced_usu", e.target.value)}
-            disabled={editMode}
-            className={fieldErrors.ced_usu ? "border-red-500" : ""}
-          />
+          <div className="flex gap-2">
+            <span className="inline-flex items-center px-3 h-11 rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300">
+              V-
+            </span>
+            <div className="flex-1">
+              <Input
+                id="f-cedula"
+                placeholder="Ej: 12345678"
+                value={formData.ced_usu.replace(/^V-?/, "")}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  onChange("ced_usu", digits ? `V-${digits}` : "");
+                }}
+                disabled={editMode}
+                className={fieldErrors.ced_usu ? "border-red-500" : ""}
+              />
+            </div>
+          </div>
           {fieldErrors.ced_usu && (
             <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}

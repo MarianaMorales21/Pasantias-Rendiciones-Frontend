@@ -25,6 +25,8 @@ export const useDepartures = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
   const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
   const [formData, setFormData] = useState<departureItem>(emptyForm);
 
   // --- Carga de Datos ---
@@ -94,7 +96,8 @@ export const useDepartures = () => {
       return response;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      alert("Error al crear partida: " + message);
+      setWarningMessage(message);
+      setIsWarningModalOpen(true);
       return null;
     } finally {
       setIsLoading(false);
@@ -132,11 +135,12 @@ export const useDepartures = () => {
         clearFieldErrors();
         setIsEditModalOpen(false);
         return true;
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        alert("Error al editar partida: " + message);
-        return false;
-      } finally {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setWarningMessage(message);
+      setIsWarningModalOpen(true);
+      return false;
+    } finally {
         setIsLoading(false);
       }
     }
@@ -192,6 +196,9 @@ export const useDepartures = () => {
     isDeleteBlockedOpen,
     setIsDeleteBlockedOpen,
     deleteBlockedMessage,
+    isWarningModalOpen,
+    setIsWarningModalOpen,
+    warningMessage,
     formData,
     openCreateModal,
     handleCreate,
