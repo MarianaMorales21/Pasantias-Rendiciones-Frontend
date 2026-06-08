@@ -9,10 +9,30 @@ export function DetailedReportPreview({ data, authorities }: { data: FullDetaile
     !a.ran_aut.toLowerCase().includes("presidenta")
   );
 
+  // Función corregida y unificada para formato DD/MM/YYYY
   const formatDate = (value: Date | string | number | null | undefined) => {
     if (!value || value === "N/A") return "N/A";
-    if (value instanceof Date) return value.toLocaleDateString("es-VE").replace(/-/g, "/");
-    return String(value).split("T")[0].replace(/-/g, "/");
+
+    let date: Date;
+
+    if (value instanceof Date) {
+      date = value;
+    } else if (typeof value === "string" && value.includes("T")) {
+      // Evita desfases horarios al separar solo la fecha de los strings ISO
+      const [year, month, day] = value.split("T")[0].split("-");
+      return `${day}/${month}/${year}`;
+    } else {
+      date = new Date(value);
+    }
+
+    if (isNaN(date.getTime())) return "N/A";
+
+    // Extrae los componentes de forma manual o local forzando las barras '/'
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
   };
 
   const Header = () => (
@@ -78,7 +98,8 @@ export function DetailedReportPreview({ data, authorities }: { data: FullDetaile
               <td className="border border-gray-300 p-1 text-center">FECHA DE COBRO OPG</td>
             </tr>
             <tr className="text-center font-medium">
-              <td className="border border-gray-300 p-1">{new Date().toLocaleDateString("es-VE")}</td>
+              {/* Se aplica formatDate también a la fecha actual para garantizar consistencia */}
+              <td className="border border-gray-300 p-1">{formatDate(new Date())}</td>
               <td className="border border-gray-300 p-1">{header.num_opg}</td>
               <td className="border border-gray-300 p-1">{formatDate(header.fec_opg)}</td>
               <td className="border border-gray-300 p-1">{header.dcr_opg || "N/A"}</td>

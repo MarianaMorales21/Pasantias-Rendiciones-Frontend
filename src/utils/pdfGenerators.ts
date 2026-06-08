@@ -69,24 +69,39 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       drawHeader();
+      doc.setPage(i); // Asegura consistencia en el contexto de jsPDF
       drawFooter();
     }
   };
 
+  // Función corregida e idéntica a la del Preview para formato DD/MM/YYYY
   const formatVezDate = (d: Date | string | number | null | undefined): string => {
     if (!d || d === "N/A") return "N/A";
 
+    let date: Date;
+
     if (d instanceof Date) {
-      return d.toLocaleDateString("es-VE").replace(/-/g, "/");
+      date = d;
+    } else if (typeof d === "string" && d.includes("T")) {
+      // Procesa cadenas ISO sin interferencia de zonas horarias locales
+      const [year, month, day] = d.split("T")[0].split("-");
+      return `${day}/${month}/${year}`;
+    } else {
+      date = new Date(d);
     }
 
-    const dateStr = String(d).split("T")[0];
-    return dateStr.replace(/-/g, "/");
+    if (isNaN(date.getTime())) return "N/A";
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
   };
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(`RENDICIÓN DE CUENTA Nº ${header.num_rnd}`, 195, 31, { align: "right" });
+  doc.text(`RENDICIÓN DE CUENTA Nº {header.num_rnd}`, 195, 31, { align: "right" });
 
   let y = 35;
   const margin = { left: 10, right: 10, top: 30, bottom: 42 };
@@ -120,7 +135,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
       [
         { content: header.num_par || "PARTIDA PENDIENTE", colSpan: 2 },
         { content: (header.prd_rnd || "").toUpperCase(), colSpan: 2 },
-        { content: `${summary.porcentajeRendido}%`, colSpan: 2, styles: { fontStyle: "bold" } }
+        { content: `{summary.porcentajeRendido}%`, colSpan: 2, styles: { fontStyle: "bold" } }
       ]
     ],
     styles: { fontSize: 6, halign: "center", cellPadding: 1, textColor: [0, 0, 0], lineColor: [180, 180, 180], lineWidth: 0.1 }
@@ -139,7 +154,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
       summary.montoRendidoFmt,
       summary.reintegroFmt || "0,00",
       summary.montoPorRendirFmt,
-      `${summary.porcentajePorRendir || 0}%`
+      `{summary.porcentajePorRendir || 0}%`
     ]],
     headStyles: { fillColor: [240, 243, 250], textColor: [0, 0, 0], fontStyle: "bold", fontSize: 6.5, halign: "center", lineWidth: 0.1, lineColor: [180, 180, 180] },
     styles: { fontSize: 6.5, halign: "center", cellPadding: 1.2, textColor: [0, 0, 0], lineColor: [180, 180, 180], lineWidth: 0.1 }
@@ -166,10 +181,9 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
         { content: "TELÉFONO", styles: { fillColor: [240, 243, 250], fontStyle: "bold" }, colSpan: 2 }
       ],
       [
-        { content: `${header.nom_ctd} ${header.ape_ctd}`.toUpperCase() },
+        { content: `{header.nom_ctd} {header.ape_ctd}`.toUpperCase() },
         header.ced_ctd,
         { content: "(0276) 3422355", colSpan: 2 }
-
       ]
     ],
     styles: { fontSize: 6.5, cellPadding: 1.2, textColor: [0, 0, 0], lineColor: [180, 180, 180], lineWidth: 0.1 },
@@ -212,7 +226,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
 
     rows.push([
       {
-        content: `${(grupo.nom_pro || "").toUpperCase()} SUBTOTAL:`,
+        content: `{grupo.nom_pro || ""}`.toUpperCase() + " SUBTOTAL:",
         colSpan: 8,
         styles: { halign: "right", fontStyle: "bold", fontSize: 6 }
       },
@@ -300,19 +314,19 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
   doc.setFont("helvetica", "bold");
 
   const presName = presidenta
-    ? `${presidenta.abr_ran || ""} ${presidenta.nom_aut} ${presidenta.ape_aut}`.trim().toUpperCase()
+    ? `{presidenta.abr_ran || ""} {presidenta.nom_aut} {presidenta.ape_aut}`.trim().toUpperCase()
     : "PENDIENTE";
 
   const adminName = jefaAdmin
-    ? `${jefaAdmin.abr_ran || ""} ${jefaAdmin.nom_aut} ${jefaAdmin.ape_aut}`.trim().toUpperCase()
+    ? `{jefaAdmin.abr_ran || ""} {jefaAdmin.nom_aut} {jefaAdmin.ape_aut}`.trim().toUpperCase()
     : "PENDIENTE";
 
   doc.text(presName, 60, signY + 5, { align: "center" });
   doc.text(adminName, 150, signY + 5, { align: "center" });
 
   doc.setFontSize(7);
-  doc.text(`C.I. ${presidenta?.ced_aut || ""}`, 60, signY + 9, { align: "center" });
-  doc.text(`C.I. ${jefaAdmin?.ced_aut || ""}`, 150, signY + 9, { align: "center" });
+  doc.text(`C.I. {presidenta?.ced_aut || ""}`, 60, signY + 9, { align: "center" });
+  doc.text(`C.I. {jefaAdmin?.ced_aut || ""}`, 150, signY + 9, { align: "center" });
   doc.text(presidenta?.ran_aut?.toUpperCase() || "PRESIDENTA", 60, signY + 13, { align: "center" });
   doc.text(jefaAdmin?.ran_aut?.toUpperCase() || "ADMINISTRACIÓN", 150, signY + 13, { align: "center" });
 
