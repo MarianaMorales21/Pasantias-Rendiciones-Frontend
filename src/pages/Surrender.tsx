@@ -27,7 +27,7 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
     setRndFormData({ ...rndFormData, [field]: value });
 
   // Bloquear reintegro si es la primera rendición de la OPG (la de menor cod_rnd)
-  const selectedRndForFilter = (hook as any).selectedRnd;
+  const selectedRndForFilter = hook.selectedRnd;
   const rndsDeEstaOpg = renditions.filter(r => Number(r.opg_rnd) === Number(rndFormData.opg_rnd));
   const codRndActual = selectedRndForFilter?.cod_rnd;
   const minCodRnd = rndsDeEstaOpg.length > 0 ? Math.min(...rndsDeEstaOpg.map(r => r.cod_rnd)) : null;

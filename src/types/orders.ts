@@ -6,7 +6,7 @@ export interface OrderItem {
     fco_opg: string | null;
     fdc_opg: string;
     dcr_opg: string;
-    mon_opg: string; 
+    mon_opg: string;
     con_opg: string;
     sta_opg: number;
     par_opg: number;
@@ -17,4 +17,5 @@ export interface OrderItem {
     nom_sta?: string;
     num_par?: string;
     nom_par?: string;
+    gac_opg: string;
 }

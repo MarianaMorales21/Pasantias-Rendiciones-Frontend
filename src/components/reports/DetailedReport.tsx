@@ -13,14 +13,21 @@ export function DetailedReportPreview({ data, authorities }: { data: FullDetaile
   const formatDate = (value: Date | string | number | null | undefined) => {
     if (!value || value === "N/A") return "N/A";
 
+    if (typeof value === "string") {
+      const cleanStr = value.split("T")[0].trim();
+      if (cleanStr.includes("-")) {
+        const parts = cleanStr.split("-");
+        if (parts.length === 3) {
+          const [year, month, day] = parts;
+          return `${day}/${month}/${year}`;
+        }
+      }
+    }
+
     let date: Date;
 
     if (value instanceof Date) {
       date = value;
-    } else if (typeof value === "string" && value.includes("T")) {
-      // Evita desfases horarios al separar solo la fecha de los strings ISO
-      const [year, month, day] = value.split("T")[0].split("-");
-      return `${day}/${month}/${year}`;
     } else {
       date = new Date(value);
     }

@@ -54,6 +54,7 @@ export interface ReportHeader {
 
   // También podrías necesitar este si tu backend lo envía
   fec_dcr?: string;
+  gac_opg?: string;
 }
 // Resumen de montos del reporte detallado
 export interface ReportSummary {
@@ -192,4 +193,11 @@ export interface DashboardStatsResponse {
   total_rendiciones: number;
   total_gastos: number;
   // ... otros campos
+}
+
+export interface DepartureStatItem {
+  cod_par: number;
+  num_par: string;
+  nom_par: string;
+  total_gastado: number;
 }

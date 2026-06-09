@@ -143,7 +143,7 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [location, isActive]);
+  }, [location, isActive, visibleNavItems]);
 
   useEffect(() => {
     if (openSubmenu !== null) {

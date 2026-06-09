@@ -5,7 +5,8 @@ import {
   FullActaReport,
   RenditionListItem,
   FullOPGReport,
-  DashboardStatsResponse
+  DashboardStatsResponse,
+  DepartureStatItem
 } from "../types/reports";
 
 const api = helpHttp();
@@ -37,4 +38,10 @@ export const reportService = {
   getDashboardStats: (): Promise<ApiResponse<DashboardStatsResponse>> => {
     return api.get(`${url}/dashboard-stats`) as Promise<ApiResponse<DashboardStatsResponse>>;
   },
-};
+
+  // Estadísticas por partida presupuestaria
+  getDepartureStats: (codOpg?: number): Promise<ApiResponse<{ ok: boolean; data: DepartureStatItem[] }>> => {
+    const query = codOpg ? `?cod_opg=${codOpg}` : "";
+    return api.get(`${url}/dashboard/departure-stats${query}`) as Promise<ApiResponse<{ ok: boolean; data: DepartureStatItem[] }>>;
+  },
+};

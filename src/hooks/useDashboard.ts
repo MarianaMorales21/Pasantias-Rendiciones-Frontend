@@ -3,6 +3,7 @@ import { orderService } from "../services/orderService";
 import { reportService } from "../services/reportsService";
 import { OrderItem } from "../types/orders";
 import { isApiError } from "../helpers/helpHttp";
+import { DepartureStatItem } from "../types/reports";
 
 export function useDashboard() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -11,6 +12,9 @@ export function useDashboard() {
   const [dashboardStats, setDashboardStats] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [opgReport, setOpgReport] = useState<any>(null);
+  const [departureStats, setDepartureStats] = useState<DepartureStatItem[]>([]);
+  const [departureStatsMode, setDepartureStatsMode] = useState<"opg" | "annual">("opg");
+  const [departureStatsLoading, setDepartureStatsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Fetch initial data
@@ -60,12 +64,38 @@ export function useDashboard() {
     fetchOpgReport();
   }, [selectedOrder]);
 
+  useEffect(() => {
+    const fetchDepartureStats = async () => {
+      if (departureStatsMode === "opg" && !selectedOrder) return;
+      setDepartureStatsLoading(true);
+      try {
+        const res = await reportService.getDepartureStats(
+          departureStatsMode === "opg" ? selectedOrder!.cod_opg : undefined
+        );
+        if (!isApiError(res) && res.ok) {
+          setDepartureStats(res.data);
+        }
+      } catch (err) {
+        console.error("Error al cargar estadísticas por partida:", err);
+        setDepartureStats([]);
+      } finally {
+        setDepartureStatsLoading(false);
+      }
+    };
+
+    fetchDepartureStats();
+  }, [selectedOrder, departureStatsMode]);
+
   return {
     orders,
     selectedOrder,
     setSelectedOrder,
     dashboardStats,
     opgReport,
+    departureStats,
+    departureStatsMode,
+    setDepartureStatsMode,
+    departureStatsLoading,
     loading,
   };
 }

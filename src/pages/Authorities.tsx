@@ -13,7 +13,7 @@ import { PencilIcon, CheckCircleIcon, CloseIcon } from "../icons";
 const REQUIRED_ROLES = [
   "Presidenta de la fundacion",
   "Coordinadora de administracion",
-  "DIRECTORA DE ADMINISTRACIÓN Y FINANZAS- GOBERNACION DEL ESTADO TACHIRA"
+  "DIRECTORA DE ADMINISTRACIÓN Y FINANZAS"
 ];
 
 function AuthorityBlock({

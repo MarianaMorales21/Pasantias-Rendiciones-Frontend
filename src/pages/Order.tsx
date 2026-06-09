@@ -44,6 +44,7 @@ const emptyForm: OrderFormData = {
   fco_opg: "",
   fdc_opg: new Date().toISOString().split("T")[0],
   dcr_opg: "",
+  gac_opg: "",
   mon_opg: "",
   con_opg: "",
   sta_opg: 1,
@@ -182,6 +183,16 @@ function OrderForm({ formData, onChange, cuentadantes, states, partidas, fieldEr
             <p className="text-xs text-red-500 mt-1 font-medium">Este campo no puede faltar.</p>
           )}
         </div>
+        <div>
+          <Label htmlFor="f-gac">Nro. Gaceta Oficial</Label>
+          <Input
+            id="f-gac"
+            type="text"
+            placeholder="Ej: 41234"
+            value={formData.gac_opg || ""}
+            onChange={(e) => onChange("gac_opg", e.target.value)}
+          />
+        </div>
 
         <div>
           <Label htmlFor="f-par">Partida Presupuestaria</Label>
@@ -293,8 +304,8 @@ export default function Order() {
   const openEditModal = (order: OrderItem) => {
     clearFieldErrors();
     setSelectedOrder(order);
-    const { num_opg, ctd_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg } = order;
-    setFormData({ num_opg, ctd_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, mon_opg, con_opg, sta_opg, par_opg });
+    const { num_opg, ctd_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, gac_opg, mon_opg, con_opg, sta_opg, par_opg } = order;
+    setFormData({ num_opg, ctd_opg, fec_opg, fco_opg, fdc_opg, dcr_opg, gac_opg, mon_opg, con_opg, sta_opg, par_opg });
     setIsEditModalOpen(true);
   };
 

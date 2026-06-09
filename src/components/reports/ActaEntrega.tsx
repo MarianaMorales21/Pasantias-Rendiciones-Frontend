@@ -28,6 +28,26 @@ export function ActaPreview({ data, authorities }: { data: FullDetailedReport, a
     return `${abr} ${name.replace("LCDA. ", "").replace("LCDA ", "")}`;
   };
 
+  const formatDate = (value: Date | string | number | null | undefined) => {
+    if (!value || value === "N/A") return "N/A";
+    if (typeof value === "string") {
+      const cleanStr = value.split("T")[0].trim();
+      if (cleanStr.includes("-")) {
+        const parts = cleanStr.split("-");
+        if (parts.length === 3) {
+          const [year, month, day] = parts;
+          return `${day}/${month}/${year}`;
+        }
+      }
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) return "N/A";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <div className="bg-white dark:bg-gray-950 w-full shadow-2xl border p-12 text-[12px] text-gray-900 dark:text-gray-100 font-serif min-h-[900px] rounded-sm transition-all duration-300">
       {/* Logos en la parte superior */}
@@ -72,7 +92,7 @@ export function ActaPreview({ data, authorities }: { data: FullDetailedReport, a
           Dicha rendición corresponde a la Orden de Pago Nº
           <span className="font-bolditalic mx-1">{header.num_opg}</span> por concepto de:
           <span className="uppercase font-bolditalic mx-1"> {(header.con_opg || "").toUpperCase()}</span>,
-          APROBADO SEGÚN DECRETO Nº <span className="font-bolditalic">{header.dcr_opg}</span> DE FECHA <span className="font-bolditalic">{header.fdc_opg}</span>,
+          APROBADO SEGÚN DECRETO Nº <span className="font-bolditalic">{header.dcr_opg}</span> DE FECHA <span className="font-bolditalic">{formatDate(header.fdc_opg)}</span> GACETA OFICIAL NRO <span className="font-bold">{header.gac_opg}</span>,
           ASIGNACIÓN PRESUPUESTARIA <span className="font-bolditalic">{header.num_par || ""}</span>, RECIBIDA POR LA CANTIDAD
           <span className="font-bolditalic uppercase mx-1"> {numberToLetters(summary.montoAsignado)} (Bs. {summary.montoAsignadoFmt})</span>.
         </p>

@@ -415,6 +415,7 @@ export function useSurrender() {
             }
 
             if (selectedOpg) await fetchRenditionsByOpg(selectedOpg.cod_opg);
+            setSelectedRnd(null);
             setIsRndEditOpen(false);
         } catch (err) {
             setIsRndEditOpen(false);
@@ -857,6 +858,7 @@ export function useSurrender() {
 
         // ── Warning modal ──
         warningMessage,
+        setWarningMessage,
         isWarningOpen,
         setIsWarningOpen,
 

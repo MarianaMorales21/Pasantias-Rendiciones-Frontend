@@ -8,6 +8,38 @@ import {
   JsPDFWithAutoTable
 } from "./reportHelpers";
 
+// Función compartida por todos los generadores de PDF
+const formatVezDate = (d: Date | string | number | null | undefined): string => {
+  if (!d || d === "N/A") return "N/A";
+
+  if (typeof d === "string") {
+    const cleanStr = d.split("T")[0].trim();
+    if (cleanStr.includes("-")) {
+      const parts = cleanStr.split("-");
+      if (parts.length === 3) {
+        const [year, month, day] = parts;
+        return `${day}/${month}/${year}`;
+      }
+    }
+  }
+
+  let date: Date;
+
+  if (d instanceof Date) {
+    date = d;
+  } else {
+    date = new Date(d);
+  }
+
+  if (isNaN(date.getTime())) return "N/A";
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+};
+
 
 /**
  * GENERADOR: DETALLE DE RENDICIÓN
@@ -74,34 +106,9 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
     }
   };
 
-  // Función corregida e idéntica a la del Preview para formato DD/MM/YYYY
-  const formatVezDate = (d: Date | string | number | null | undefined): string => {
-    if (!d || d === "N/A") return "N/A";
-
-    let date: Date;
-
-    if (d instanceof Date) {
-      date = d;
-    } else if (typeof d === "string" && d.includes("T")) {
-      // Procesa cadenas ISO sin interferencia de zonas horarias locales
-      const [year, month, day] = d.split("T")[0].split("-");
-      return `${day}/${month}/${year}`;
-    } else {
-      date = new Date(d);
-    }
-
-    if (isNaN(date.getTime())) return "N/A";
-
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-
-    return `${day}/${month}/${year}`;
-  };
-
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(`RENDICIÓN DE CUENTA Nº {header.num_rnd}`, 195, 31, { align: "right" });
+  doc.text(`RENDICIÓN DE CUENTA Nº ${header.num_rnd}`, 195, 31, { align: "right" });
 
   let y = 35;
   const margin = { left: 10, right: 10, top: 30, bottom: 42 };
@@ -135,7 +142,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
       [
         { content: header.num_par || "PARTIDA PENDIENTE", colSpan: 2 },
         { content: (header.prd_rnd || "").toUpperCase(), colSpan: 2 },
-        { content: `{summary.porcentajeRendido}%`, colSpan: 2, styles: { fontStyle: "bold" } }
+        { content: `${summary.porcentajeRendido}%`, colSpan: 2, styles: { fontStyle: "bold" } }
       ]
     ],
     styles: { fontSize: 6, halign: "center", cellPadding: 1, textColor: [0, 0, 0], lineColor: [180, 180, 180], lineWidth: 0.1 }
@@ -154,7 +161,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
       summary.montoRendidoFmt,
       summary.reintegroFmt || "0,00",
       summary.montoPorRendirFmt,
-      `{summary.porcentajePorRendir || 0}%`
+      `${summary.porcentajePorRendir || 0}%`
     ]],
     headStyles: { fillColor: [240, 243, 250], textColor: [0, 0, 0], fontStyle: "bold", fontSize: 6.5, halign: "center", lineWidth: 0.1, lineColor: [180, 180, 180] },
     styles: { fontSize: 6.5, halign: "center", cellPadding: 1.2, textColor: [0, 0, 0], lineColor: [180, 180, 180], lineWidth: 0.1 }
@@ -181,7 +188,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
         { content: "TELÉFONO", styles: { fillColor: [240, 243, 250], fontStyle: "bold" }, colSpan: 2 }
       ],
       [
-        { content: `{header.nom_ctd} {header.ape_ctd}`.toUpperCase() },
+        { content: `${header.nom_ctd} ${header.ape_ctd}`.toUpperCase() },
         header.ced_ctd,
         { content: "(0276) 3422355", colSpan: 2 }
       ]
@@ -226,7 +233,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
 
     rows.push([
       {
-        content: `{grupo.nom_pro || ""}`.toUpperCase() + " SUBTOTAL:",
+        content: `${grupo.nom_pro || ""}`.toUpperCase() + " SUBTOTAL:",
         colSpan: 8,
         styles: { halign: "right", fontStyle: "bold", fontSize: 6 }
       },
@@ -314,19 +321,19 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
   doc.setFont("helvetica", "bold");
 
   const presName = presidenta
-    ? `{presidenta.abr_ran || ""} {presidenta.nom_aut} {presidenta.ape_aut}`.trim().toUpperCase()
+    ? `${presidenta.abr_ran || ""} ${presidenta.nom_aut} ${presidenta.ape_aut}`.trim().toUpperCase()
     : "PENDIENTE";
 
   const adminName = jefaAdmin
-    ? `{jefaAdmin.abr_ran || ""} {jefaAdmin.nom_aut} {jefaAdmin.ape_aut}`.trim().toUpperCase()
+    ? `${jefaAdmin.abr_ran || ""} ${jefaAdmin.nom_aut} ${jefaAdmin.ape_aut}`.trim().toUpperCase()
     : "PENDIENTE";
 
   doc.text(presName, 60, signY + 5, { align: "center" });
   doc.text(adminName, 150, signY + 5, { align: "center" });
 
   doc.setFontSize(7);
-  doc.text(`C.I. {presidenta?.ced_aut || ""}`, 60, signY + 9, { align: "center" });
-  doc.text(`C.I. {jefaAdmin?.ced_aut || ""}`, 150, signY + 9, { align: "center" });
+  doc.text(`C.I. ${presidenta?.ced_aut || ""}`, 60, signY + 9, { align: "center" });
+  doc.text(`C.I. ${jefaAdmin?.ced_aut || ""}`, 150, signY + 9, { align: "center" });
   doc.text(presidenta?.ran_aut?.toUpperCase() || "PRESIDENTA", 60, signY + 13, { align: "center" });
   doc.text(jefaAdmin?.ran_aut?.toUpperCase() || "ADMINISTRACIÓN", 150, signY + 13, { align: "center" });
 
@@ -497,10 +504,9 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
 
   y = drawWrappedMixedText([
     { text: "Por medio de la presente, se hace entrega formal de la Rendición de Cuenta Nº ", bold: false },
-    { text: `${header.num_rnd}`, bold: true },
-    { text: ", por la cantidad de ", bold: false },
-    { text: `${numberToLetters(summary.montoRendido)} (Bs. ${summary.montoRendidoFmt})`, bold: true },
-    { text: ".", bold: false }
+    { text: `${header.num_rnd},`, bold: true },
+    { text: " por la cantidad de ", bold: false },
+    { text: `${numberToLetters(summary.montoRendido)} (Bs. ${summary.montoRendidoFmt}).`, bold: true }
   ], 15, y, 180, 5, paragraphIndent, true);
   y += 3;
 
@@ -508,8 +514,7 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
     { text: "Dicha rendición corresponde a la Orden de Pago Nº ", bold: false },
     { text: `${header.num_opg}`, bold: true },
     { text: " por concepto de: ", bold: false },
-    { text: `${(header.con_opg || "").toUpperCase()}, APROBADO SEGÚN DECRETO Nº ${header.dcr_opg} DE FECHA ${header.fdc_opg}, ASIGNACIÓN PRESUPUESTARIA ${header.num_par || ""}, RECIBIDA POR LA CANTIDAD ${numberToLetters(summary.montoAsignado)} (Bs. ${summary.montoAsignadoFmt})`, bold: true },
-    { text: ".", bold: false }
+    { text: `${(header.con_opg || "").toUpperCase()}, APROBADO SEGÚN DECRETO Nº ${header.dcr_opg} DE FECHA ${formatVezDate(header.fdc_opg)} GACETA OFICIAL NRO ${header.gac_opg}, ASIGNACIÓN PRESUPUESTARIA ${header.num_par || ""}, RECIBIDA POR LA CANTIDAD ${numberToLetters(summary.montoAsignado)} (Bs. ${summary.montoAsignadoFmt}).`, bold: true }
   ], 15, y, 180, 5, paragraphIndent, true);
   y += 3;
 
@@ -519,8 +524,7 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
     { text: " de la totalidad de la orden de pago quedando pendiente el ", bold: false },
     { text: `${summary.porcentajePorRendir}%`, bold: true },
     { text: " por la cantidad de ", bold: false },
-    { text: `${numberToLetters(summary.montoPorRendir)} (Bs. ${summary.montoPorRendirFmt})`, bold: true },
-    { text: ".", bold: false }
+    { text: `${numberToLetters(summary.montoPorRendir)} (Bs. ${summary.montoPorRendirFmt}).`, bold: true }
   ], 15, y, 180, 5, paragraphIndent, true);
   y += 7;
 
@@ -552,7 +556,7 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
 
   const abrPres = presidenta?.abr_ran || "Lcda.";
   const abrAdmin = administradora?.abr_ran || "Lcda.";
-  const presName = presidenta ? `${abrPres} ${presidenta.nom_aut} ${presidenta.ape_aut}`.toUpperCase() : "LCDA. YARITZA ISBEL PEÑA DUARTE";
+  const presName = presidenta ? `${abrPres} ${presidenta.nom_aut} ${presidenta.ape_aut}`.toUpperCase() : "LCDA. YARITZA PEÑA DUARTE";
   const adminName = administradora ? `${abrAdmin} ${administradora.nom_aut} ${administradora.ape_aut}`.toUpperCase() : "LCDA. DECCY C. PERNÍA LEAL";
 
   doc.text(presName, presCenterX, signY + 5, { align: "center" });
@@ -758,7 +762,7 @@ export async function exportSolicitudFormaPDF(data: FullDetailedReport, authorit
   doc.setFont("helvetica", "normal");
   doc.text("con fecha de cobro", marginX + 42, currentY);
   doc.setFont("helvetica", "bold");
-  doc.text(header.fco_opg || "2025-12-16", marginX + 80, currentY, { align: "center" });
+  doc.text(formatVezDate(header.fco_opg) || "N/A", marginX + 80, currentY, { align: "center" });
   drawLine(marginX + 70, currentY, 25);
 
   doc.setFont("helvetica", "normal");
@@ -777,7 +781,7 @@ export async function exportSolicitudFormaPDF(data: FullDetailedReport, authorit
   currentY += 5;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  const conceptText = (header.con_opg || "TRANSFERENCIAS DE CAPITAL A ENTES...").toUpperCase();
+  const conceptText = `${header.con_opg || ""}, APROBADO SEGÚN DECRETO Nº ${header.dcr_opg || ""} DE FECHA ${header.fdc_opg ? formatVezDate(header.fdc_opg) : ""} GACETA OFICIAL NRO ${header.gac_opg || ""}`.toUpperCase();
   const splitConcept = doc.splitTextToSize(conceptText, tableWidth - 4);
   doc.text(splitConcept, marginX + 2, currentY);
 
@@ -785,24 +789,30 @@ export async function exportSolicitudFormaPDF(data: FullDetailedReport, authorit
   currentY = startY + 105;
   doc.line(marginX, currentY, marginX + tableWidth, currentY);
 
+  const today = new Date();
+  const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const diaSystem = today.getDate().toString();
+  const mesSystem = meses[today.getMonth()].toUpperCase();
+  const anioSystem = today.getFullYear().toString();
+
   currentY += 8;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text(`En San Cristóbal, a los`, marginX + 2, currentY);
   doc.setFont("helvetica", "bold");
-  doc.text("15", marginX + 49, currentY, { align: "center" });
+  doc.text(diaSystem, marginX + 49, currentY, { align: "center" });
   drawLine(marginX + 42, currentY, 15);
 
   doc.setFont("helvetica", "normal");
   doc.text(`días, del mes de`, marginX + 60, currentY);
   doc.setFont("helvetica", "bold");
-  doc.text("ENERO", marginX + 110, currentY, { align: "center" });
+  doc.text(mesSystem, marginX + 110, currentY, { align: "center" });
   drawLine(marginX + 88, currentY, 45);
 
   doc.setFont("helvetica", "normal");
   doc.text(`de`, marginX + 135, currentY);
   doc.setFont("helvetica", "bold");
-  doc.text("2026", marginX + 152, currentY, { align: "center" });
+  doc.text(anioSystem, marginX + 152, currentY, { align: "center" });
   drawLine(marginX + 142, currentY, 20);
 
   // Firma
@@ -888,7 +898,7 @@ export async function exportSolicitudCartaPDF(data: FullDetailedReport, authorit
   y += blockHeight1 + 2;
 
   // Texto del segundo párrafo
-  const text2 = `     Dicha rendición corresponde a la cantidad de ${numberToLetters(summary.montoRendido)} (Bs.${summary.montoRendidoFmt}), la cual corresponde a la Orden de Pago Nº ${header.num_opg} por concepto de: ${(header.con_opg || "").toUpperCase()}, APROBADO SEGÚN DECRETO Nº ${header.dcr_opg} DE FECHA ${header.fdc_opg}, ASIGNACIÓN PRESUPUESTARIA ${header.num_par} RECIBIDA POR LA CANTIDAD ${numberToLetters(summary.montoAsignado)} (Bs.${summary.montoAsignadoFmt}).`;
+  const text2 = `     Dicha rendición corresponde a la cantidad de ${numberToLetters(summary.montoRendido)} (Bs.${summary.montoRendidoFmt}), la cual corresponde a la Orden de Pago Nº ${header.num_opg} por concepto de: ${(header.con_opg || "").toUpperCase()}, APROBADO SEGÚN DECRETO Nº ${header.dcr_opg} DE FECHA ${formatVezDate(header.fdc_opg)} GACETA OFICIAL NRO ${header.gac_opg || ""}, ASIGNACIÓN PRESUPUESTARIA ${header.num_par} RECIBIDA POR LA CANTIDAD ${numberToLetters(summary.montoAsignado)} (Bs.${summary.montoAsignadoFmt}).`;
 
   const splitText2 = doc.splitTextToSize(text2, contentWidth);
   doc.text(splitText2, marginX, y, { align: "justify", maxWidth: contentWidth });

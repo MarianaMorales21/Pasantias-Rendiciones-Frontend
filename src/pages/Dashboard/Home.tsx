@@ -6,6 +6,7 @@ import RecentOrders from "../../components/ecommerce/RecentOrders";
 import { useDashboard } from "../../hooks/useDashboard";
 import Label from "../../components/form/Label";
 import RenditionExecutionTable from "../../components/ecommerce/Rendition";
+import DepartureStatsTable from "../../components/ecommerce/DepartureStatsTable";
 
 export default function Home() {
   const {
@@ -14,6 +15,10 @@ export default function Home() {
     setSelectedOrder,
     dashboardStats,
     opgReport,
+    departureStats,
+    departureStatsMode,
+    setDepartureStatsMode,
+    departureStatsLoading,
     loading,
   } = useDashboard();
 
@@ -79,6 +84,16 @@ export default function Home() {
 
         <div className="col-span-12 lg:col-span-12 mt-6">
           <RenditionExecutionTable renditions={opgReport?.renditions} />
+        </div>
+
+        <div className="col-span-12 lg:col-span-12">
+          <DepartureStatsTable
+            stats={departureStats}
+            loading={departureStatsLoading}
+            mode={departureStatsMode}
+            setMode={setDepartureStatsMode}
+            orderNumber={selectedOrder?.num_opg?.toString()}
+          />
         </div>
 
         {/* 3. Tabla de Rendiciones Recientes */}

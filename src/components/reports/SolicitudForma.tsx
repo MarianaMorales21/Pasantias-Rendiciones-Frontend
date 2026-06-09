@@ -24,6 +24,26 @@ export function SolicitudFormaPreview({ data, authorities }: { data: FullDetaile
   const adminCedula = administradora ? administradora.ced_aut : header.ced_ctd;
   const adminCargo = administradora ? administradora.ran_aut : "Jefe de la División de Administración";
 
+  const formatDate = (value: Date | string | number | null | undefined): string => {
+    if (!value || value === "N/A") return "N/A";
+    if (typeof value === "string") {
+      const cleanStr = value.split("T")[0].trim();
+      if (cleanStr.includes("-")) {
+        const parts = cleanStr.split("-");
+        if (parts.length === 3) {
+          const [year, month, day] = parts;
+          return `${day}/${month}/${year}`;
+        }
+      }
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) return "N/A";
+    const d = String(date.getDate()).padStart(2, "0");
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  };
+
   return (
     <div className="bg-white dark:bg-gray-950 w-full shadow-2xl border-[3px] border-gray-900 p-0 text-[12px] text-gray-900 dark:text-gray-100 font-sans rounded-sm transition-all duration-300">
       {/* ENCABEZADO */}
@@ -106,7 +126,7 @@ export function SolicitudFormaPreview({ data, authorities }: { data: FullDetaile
           </div>
           <span className="shrink-0">con fecha de cobro</span>
           <div className="w-40 border-b-[3px] border-gray-900 text-center font-bold">
-            {header.fco_opg || "N/A"}
+           {formatDate(header.fco_opg) || "N/A"}
           </div>
           <div className="flex-grow text-[10px] leading-tight flex flex-col">
             <span>Partida Nº</span>
@@ -117,7 +137,7 @@ export function SolicitudFormaPreview({ data, authorities }: { data: FullDetaile
 
         {/* BLOQUE CONCEPTO */}
         <div className="border-t-[1.5px] border-gray-900 pt-4 text-justify leading-tight uppercase font-bold italic min-h-[120px]">
-          {header.con_opg}, APROBADO SEGÚN DECRETO {header.dcr_opg} DE FECHA {header.fdc_opg}.
+          {header.con_opg}, APROBADO SEGÚN DECRETO Nº {header.dcr_opg} DE FECHA {formatDate(header.fdc_opg)} GACETA OFICIAL NRO {header.gac_opg}.
         </div>
 
         {/* FECHA */}

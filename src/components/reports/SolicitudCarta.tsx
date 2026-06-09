@@ -23,6 +23,26 @@ export function SolicitudCartaPreview({ data, authorities }: { data: FullDetaile
   const adminCedula = administradora ? administradora.ced_aut : header.ced_ctd;
   const adminCargo = administradora ? (administradora.ran_aut.includes("DIVISIÓN") ? "ADMINISTRADORA" : administradora.ran_aut.toUpperCase()) : "ADMINISTRADORA";
 
+  const formatDate = (value: Date | string | number | null | undefined): string => {
+    if (!value || value === "N/A") return "N/A";
+    if (typeof value === "string") {
+      const cleanStr = value.split("T")[0].trim();
+      if (cleanStr.includes("-")) {
+        const parts = cleanStr.split("-");
+        if (parts.length === 3) {
+          const [year, month, day] = parts;
+          return `${day}/${month}/${year}`;
+        }
+      }
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) return "N/A";
+    const d = String(date.getDate()).padStart(2, "0");
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  };
+
   return (
     <div className="bg-white dark:bg-gray-950 w-full shadow-2xl border p-12 text-[16px] text-gray-900 dark:text-gray-100 font-serif min-h-[900px] rounded-sm transition-all duration-300 italic">
       {/* Logos */}
@@ -52,7 +72,7 @@ export function SolicitudCartaPreview({ data, authorities }: { data: FullDetaile
           <span className="font-bold uppercase"> {numberToLetters(summary.montoRendido)} (Bs.{summary.montoRendidoFmt})</span>,
           la cual corresponde a la <span className="font-bold underline">Orden de Pago Nº {header.num_opg}</span> por concepto de:
           <span className="font-bold uppercase"> {(header.con_opg || "").toUpperCase()}</span>,
-          APROBADO SEGÚN DECRETO Nº <span className="font-bold">{header.dcr_opg}</span> DE FECHA <span className="font-bold">{header.fdc_opg}</span>,
+          APROBADO SEGÚN DECRETO Nº <span className="font-bold">{header.dcr_opg}</span> DE FECHA <span className="font-bold">{formatDate(header.fdc_opg)}</span> GACETA OFICIAL <span className="font-bold">{header.gac_opg}</span>,
           ASIGNACIÓN PRESUPUESTARIA <span className="font-bold">{header.num_par || "13.05.51.4.07.03.03.02.003.002-000"}</span> RECIBIDA POR LA CANTIDAD
           <span className="font-bold uppercase"> {numberToLetters(summary.montoAsignado)} (Bs.{summary.montoAsignadoFmt})</span>.
         </p>
