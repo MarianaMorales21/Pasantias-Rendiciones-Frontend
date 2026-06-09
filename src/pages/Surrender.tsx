@@ -9,6 +9,7 @@ import Label from "../components/form/Label";
 import { Modal } from "../components/ui/modal/index";
 import { MagnifyingGlassIcon, PencilIcon, TrashBinIcon, PlusIcon, AngleRightIcon, ChevronLeftIcon } from "../icons";
 import { useSurrender, emptyRndForm, emptyNdbForm, emptyDrnForm } from "../hooks/useSurrender";
+import { useAuth } from "../context/AuthContext";
 import { SearchableSelect } from "../components/form/SearchableSelect";
 import { SurrenderItem } from "../types/surrender";
 import { DebitNoteItem } from "../types/debitNote";
@@ -18,10 +19,34 @@ import { OrderItem } from "../types/orders";
 
 // ─── Formulario: Rendición (Cabecera) ─────────────────────────────────────────
 function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
-  const { rndFormData, setRndFormData, orders, states: hookStates, renditions, fieldErrors } = hook;
-  const rndStates = hookStates.filter(
-    (s) => s.nom_sta === "Activo" || s.nom_sta === "Inactivo"
-  );
+  const { rndFormData, setRndFormData, orders, states: hookStates, renditions, fieldErrors, selectedRnd } = hook;
+  const { user } = useAuth();
+  const isAdminUser = user?.rol_usu === 1;
+  const isCoordinatorUser = user?.rol_usu === 2;
+
+  const isOriginalDelivered = selectedRnd?.nom_sta === "Entregada";
+
+  const rndStates = useMemo(() => {
+    if (selectedRnd) {
+      const isOriginalDelivered = selectedRnd.nom_sta === "Entregada";
+      if (isOriginalDelivered) {
+        // Si ya está entregada, solo el administrador puede cambiarla a Activo.
+        // Así que para el Administrador, mostramos "Entregada" (actual) y "Activo".
+        return hookStates.filter(s => s.nom_sta === "Entregada" || s.nom_sta === "Activo");
+      } else {
+        // Si está activa/inactiva
+        if (isAdminUser || isCoordinatorUser) {
+          // Admin y coordinadora pueden cambiar de activa a entregada
+          return hookStates.filter(s => s.nom_sta === "Activo" || s.nom_sta === "Inactivo" || s.nom_sta === "Entregada");
+        } else {
+          // Los demás no pueden cambiar a entregada
+          return hookStates.filter(s => s.nom_sta === "Activo" || s.nom_sta === "Inactivo");
+        }
+      }
+    }
+    // Si es creación, mostrar Activo/Inactivo
+    return hookStates.filter(s => s.nom_sta === "Activo" || s.nom_sta === "Inactivo");
+  }, [selectedRnd, hookStates, isAdminUser, isCoordinatorUser]);
 
   const onChange = <K extends keyof SurrenderItem>(field: K, value: SurrenderItem[K]) =>
     setRndFormData({ ...rndFormData, [field]: value });
@@ -43,14 +68,16 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
           <Label htmlFor="rnd-num">Nro. Rendición</Label>
           <Input id="rnd-num" placeholder="Ej: 001" value={rndFormData.num_rnd}
             onChange={(e) => onChange("num_rnd", e.target.value.replace(/\D/g, ""))}
-            className={fieldErrors?.rnd_num_rnd ? "border-red-500" : ""} />
+            disabled={isOriginalDelivered}
+            className={`${fieldErrors?.rnd_num_rnd ? "border-red-500" : ""} ${isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""}`} />
           {fieldErrors?.rnd_num_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
         <div>
           <Label htmlFor="rnd-opg">Orden de Pago (OPG)</Label>
           <select id="rnd-opg" value={rndFormData.opg_rnd}
             onChange={(e) => onChange("opg_rnd", parseInt(e.target.value) || 0)}
-            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.rnd_opg_rnd ? "border-red-500" : "border-gray-300"}`}>
+            disabled={isOriginalDelivered}
+            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.rnd_opg_rnd ? "border-red-500" : "border-gray-300"} ${isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""}`}>
             <option value={0}>Seleccione OPG</option>
             {orders.map((o) => (
               <option key={o.cod_opg} value={o.cod_opg}>
@@ -66,14 +93,16 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
           <Label htmlFor="rnd-fec">Fecha Rendición</Label>
           <Input id="rnd-fec" type="date" value={rndFormData.fec_rnd?.split("T")[0] || ""}
             onChange={(e) => onChange("fec_rnd", e.target.value)}
-            className={fieldErrors?.rnd_fec_rnd ? "border-red-500" : ""} />
+            disabled={isOriginalDelivered}
+            className={`${fieldErrors?.rnd_fec_rnd ? "border-red-500" : ""} ${isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""}`} />
           {fieldErrors?.rnd_fec_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
         <div>
           <Label htmlFor="rnd-prd">Periodo</Label>
           <Input id="rnd-prd" placeholder="Ej: MARZO 2024" value={rndFormData.prd_rnd}
             onChange={(e) => onChange("prd_rnd", e.target.value)}
-            className={fieldErrors?.rnd_prd_rnd ? "border-red-500" : ""} />
+            disabled={isOriginalDelivered}
+            className={`${fieldErrors?.rnd_prd_rnd ? "border-red-500" : ""} ${isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""}`} />
           {fieldErrors?.rnd_prd_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
       </div>
@@ -81,7 +110,9 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <div>
           <Label htmlFor="rnd-avs">Aviso</Label>
           <Input id="rnd-avs" placeholder="Ej: AVISO-01" value={rndFormData.avs_rnd}
-            onChange={(e) => onChange("avs_rnd", e.target.value)} />
+            onChange={(e) => onChange("avs_rnd", e.target.value)}
+            disabled={isOriginalDelivered}
+            className={isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""} />
         </div>
         <div>
           <Label htmlFor="rnd-rnt">Reintegro (Bs.)</Label>
@@ -90,9 +121,9 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               const val = e.target.value;
               onChange("rnt_rnd", val === "" ? null : val);
             }}
-            disabled={isFirstRendition}
-            className={isFirstRendition ? "opacity-50 cursor-not-allowed" : ""} />
-          {isFirstRendition && (
+            disabled={isFirstRendition || isOriginalDelivered}
+            className={(isFirstRendition || isOriginalDelivered) ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""} />
+          {isFirstRendition && !isOriginalDelivered && (
             <p className="text-xs text-yellow-500 mt-1 font-medium">
               La primera rendición de una OPG no puede tener reintegro.
             </p>
@@ -455,6 +486,9 @@ function DrnForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
 // ─── Página Principal ─────────────────────────────────────────────────────────
 export default function Surrender() {
   const hook = useSurrender();
+  const { user } = useAuth();
+  const isAdminUser = user?.rol_usu === 1;
+
   const {
     orders, renditions, debitNotes, opgDebitNotes, details,
     selectedOpg, setSelectedOpg,
@@ -543,13 +577,43 @@ export default function Surrender() {
     { header: "Estado", key: "nom_sta" },
     {
       header: "Acciones", key: "actions",
-      render: (item: SurrenderItem) => (
-        <div className="flex gap-1">
-          <button onClick={() => { clearFieldErrors(); setSelectedRnd(item); setRndFormData(item); setIsRndEditOpen(true); }} className="p-1 text-gray-500 hover:text-blue-500"><PencilIcon className="size-4" /></button>
-          <button onClick={() => { setSelectedRnd(item); setIsRndDeleteOpen(true); }} className="p-1 text-gray-500 hover:text-red-500"><TrashBinIcon className="size-4" /></button>
-          <button onClick={() => setSelectedRnd(item)} className={`p-1 ${selectedRnd?.cod_rnd === item.cod_rnd ? "text-blue-600" : "text-gray-400"}`}><AngleRightIcon className="size-4" /></button>
-        </div>
-      )
+      render: (item: SurrenderItem) => {
+        const isDelivered = item.nom_sta === "Entregada";
+        const canEdit = !isDelivered || isAdminUser;
+        const canDelete = !isDelivered;
+
+        return (
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                if (!canEdit) return;
+                clearFieldErrors();
+                setSelectedRnd(item);
+                setRndFormData(item);
+                setIsRndEditOpen(true);
+              }}
+              disabled={!canEdit}
+              title={!canEdit ? "Solo el administrador puede editar una rendición entregada" : "Editar"}
+              className={`p-1 transition-colors ${canEdit ? "text-gray-500 hover:text-blue-500" : "text-gray-300 cursor-not-allowed opacity-50"}`}
+            >
+              <PencilIcon className="size-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (!canDelete) return;
+                setSelectedRnd(item);
+                setIsRndDeleteOpen(true);
+              }}
+              disabled={!canDelete}
+              title={!canDelete ? "No se puede eliminar una rendición entregada" : "Eliminar"}
+              className={`p-1 transition-colors ${canDelete ? "text-gray-500 hover:text-red-500" : "text-gray-300 cursor-not-allowed opacity-50"}`}
+            >
+              <TrashBinIcon className="size-4" />
+            </button>
+            <button onClick={() => setSelectedRnd(item)} className={`p-1 ${selectedRnd?.cod_rnd === item.cod_rnd ? "text-blue-600" : "text-gray-400"}`}><AngleRightIcon className="size-4" /></button>
+          </div>
+        );
+      }
     }
   ];
 
@@ -574,21 +638,46 @@ export default function Surrender() {
     { header: "Monto (Bs.)", key: "mon_ndb", render: (item: DebitNoteItem) => Number(item.mon_ndb).toLocaleString("es-VE", { minimumFractionDigits: 2 }) },
     {
       header: "Acciones", key: "actions",
-      render: (item: DebitNoteItem) => (
-        <div className="flex gap-1">
-          <button onClick={() => {
-            clearFieldErrors();
-            setSelectedNdb(item);
-            setNdbFormData({
-              ...item,
-              has_retention: Number(item.sub_ndb) > 0 || Number(item.rtc_ndb) > 0 || Number(item.tbf_ndb) > 0 || Number(item.isl_ndb) > 0
-            });
-            setIsNdbEditOpen(true);
-          }} className="p-1 text-gray-500 hover:text-blue-500"><PencilIcon className="size-4" /></button>
-          <button onClick={() => { setSelectedNdb(item); setIsNdbDeleteOpen(true); }} className="p-1 text-gray-500 hover:text-red-500"><TrashBinIcon className="size-4" /></button>
-          <button onClick={() => setSelectedNdb(item)} className={`p-1 ${selectedNdb?.cod_ndb === item.cod_ndb ? "text-blue-600" : "text-gray-400"}`}><AngleRightIcon className="size-4" /></button>
-        </div>
-      )
+      render: (item: DebitNoteItem) => {
+        const isRndDelivered = selectedRnd?.nom_sta === "Entregada";
+        const canEdit = !isRndDelivered;
+        const canDelete = !isRndDelivered;
+
+        return (
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                if (!canEdit) return;
+                clearFieldErrors();
+                setSelectedNdb(item);
+                setNdbFormData({
+                  ...item,
+                  has_retention: Number(item.sub_ndb) > 0 || Number(item.rtc_ndb) > 0 || Number(item.tbf_ndb) > 0 || Number(item.isl_ndb) > 0
+                });
+                setIsNdbEditOpen(true);
+              }}
+              disabled={!canEdit}
+              title={!canEdit ? "No se puede editar notas de débito de una rendición entregada" : "Editar"}
+              className={`p-1 transition-colors ${canEdit ? "text-gray-500 hover:text-blue-500" : "text-gray-300 cursor-not-allowed opacity-50"}`}
+            >
+              <PencilIcon className="size-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (!canDelete) return;
+                setSelectedNdb(item);
+                setIsNdbDeleteOpen(true);
+              }}
+              disabled={!canDelete}
+              title={!canDelete ? "No se puede eliminar notas de débito de una rendición entregada" : "Eliminar"}
+              className={`p-1 transition-colors ${canDelete ? "text-gray-500 hover:text-red-500" : "text-gray-300 cursor-not-allowed opacity-50"}`}
+            >
+              <TrashBinIcon className="size-4" />
+            </button>
+            <button onClick={() => setSelectedNdb(item)} className={`p-1 ${selectedNdb?.cod_ndb === item.cod_ndb ? "text-blue-600" : "text-gray-400"}`}><AngleRightIcon className="size-4" /></button>
+          </div>
+        );
+      }
     }
   ];
 
@@ -601,30 +690,42 @@ export default function Surrender() {
     },
     {
       header: "Acciones", key: "actions",
-      render: (item: SurrenderDetailsItem) => (
-        <div className="flex gap-1">
-          <button
-            onClick={() => {
-              clearFieldErrors();
-              setSelectedDrn(item);   // ← Agregar
-              setDrnFormData(item);
-              setIsDrnEditOpen(true);
-            }}
-            className="p-1 text-gray-500 hover:text-blue-500"
-          >
-            <PencilIcon className="size-4" />
-          </button>
-          <button
-            onClick={() => {
-              setSelectedDrn(item);   // ← Agregar
-              setIsDrnDeleteOpen(true);
-            }}
-            className="p-1 text-gray-500 hover:text-red-500"
-          >
-            <TrashBinIcon className="size-4" />
-          </button>
-        </div>
-      )
+      render: (item: SurrenderDetailsItem) => {
+        const isRndDelivered = selectedRnd?.nom_sta === "Entregada";
+        const canEdit = !isRndDelivered;
+        const canDelete = !isRndDelivered;
+
+        return (
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                if (!canEdit) return;
+                clearFieldErrors();
+                setSelectedDrn(item);
+                setDrnFormData(item);
+                setIsDrnEditOpen(true);
+              }}
+              disabled={!canEdit}
+              title={!canEdit ? "No se puede editar detalles de una rendición entregada" : "Editar"}
+              className={`p-1 transition-colors ${canEdit ? "text-gray-500 hover:text-blue-500" : "text-gray-300 cursor-not-allowed opacity-50"}`}
+            >
+              <PencilIcon className="size-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (!canDelete) return;
+                setSelectedDrn(item);
+                setIsDrnDeleteOpen(true);
+              }}
+              disabled={!canDelete}
+              title={!canDelete ? "No se puede eliminar detalles de una rendición entregada" : "Eliminar"}
+              className={`p-1 transition-colors ${canDelete ? "text-gray-500 hover:text-red-500" : "text-gray-300 cursor-not-allowed opacity-50"}`}
+            >
+              <TrashBinIcon className="size-4" />
+            </button>
+          </div>
+        );
+      }
     }
   ];
 
@@ -746,6 +847,7 @@ export default function Surrender() {
                   <Button
                     size="md"
                     variant="primary"
+                    disabled={selectedRnd?.nom_sta === "Entregada"}
                     className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
                     startIcon={
                       <PlusIcon
@@ -782,6 +884,7 @@ export default function Surrender() {
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <Button size="md"
                     variant="primary"
+                    disabled={selectedRnd?.nom_sta === "Entregada"}
                     className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
                     startIcon={<PlusIcon style={{ width: '16px', height: '16px', display: 'block' }}
                       className="text-white fill-current" />} onClick={() => handleCreateClick('drn')}>Agregar Detalle</Button>
