@@ -7,7 +7,7 @@ import Button from "../components/ui/button/Button";
 import Input from "../components/form/input/InputField";
 import Label from "../components/form/Label";
 import { Modal } from "../components/ui/modal/index";
-import { MagnifyingGlassIcon, PencilIcon, TrashBinIcon, PlusIcon, AngleRightIcon, ChevronLeftIcon } from "../icons";
+import { MagnifyingGlassIcon, PencilIcon, TrashBinIcon, PlusIcon, AngleRightIcon, ChevronLeftIcon, AngleLeftIcon } from "../icons";
 import { useSurrender, emptyRndForm, emptyNdbForm, emptyDrnForm } from "../hooks/useSurrender";
 import { useAuth } from "../context/AuthContext";
 import { SearchableSelect } from "../components/form/SearchableSelect";
@@ -510,6 +510,38 @@ export default function Surrender() {
 
   const detailsRef = useRef<HTMLDivElement>(null);
 
+  const [searchNdb, setSearchNdb] = useState<string>("");
+  const [currentPageNdb, setCurrentPageNdb] = useState<number>(1);
+
+  useEffect(() => {
+    setSearchNdb("");
+    setCurrentPageNdb(1);
+  }, [selectedRnd]);
+
+  const sortedNdb = useMemo(() => {
+    return [...debitNotes].sort((a, b) => b.cod_ndb - a.cod_ndb);
+  }, [debitNotes]);
+
+  const filteredNdb = useMemo(() => {
+    const q = searchNdb.toLowerCase().trim();
+    if (!q) return sortedNdb;
+    return sortedNdb.filter((item) => {
+      const numMatch = item.num_ndb?.toLowerCase().includes(q);
+      const benMatch = item.nom_ben?.toLowerCase().includes(q) || item.rif_ben?.toLowerCase().includes(q);
+      const conMatch = item.con_ndb?.toLowerCase().includes(q);
+      return numMatch || benMatch || conMatch;
+    });
+  }, [sortedNdb, searchNdb]);
+
+  const ITEMS_PER_PAGE = 5;
+  const totalPagesNdb = Math.ceil(filteredNdb.length / ITEMS_PER_PAGE);
+  const activePageNdb = Math.min(Math.max(1, currentPageNdb), totalPagesNdb || 1);
+
+  const paginatedNdb = useMemo(() => {
+    const startIndex = (activePageNdb - 1) * ITEMS_PER_PAGE;
+    return filteredNdb.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredNdb, activePageNdb]);
+
   useEffect(() => {
     if (selectedNdb) {
       requestAnimationFrame(() => {
@@ -536,9 +568,6 @@ export default function Surrender() {
 
   const handleCreateClick = (type: 'rnd' | 'ndb' | 'drn') => {
     clearFieldErrors();
-    // Siempre permitir agregar detalles aunque la OPG esté completamente rendida,
-    // porque la nota de débito ya existe y su monto ya fue contabilizado.
-    // Lo que importa es que la nota de débito tenga detalles reales de gasto.
     if (type !== 'drn' && isOpgFullyRendered) {
       setIsFullyRenderedModalOpen(true);
       return;
@@ -843,39 +872,114 @@ export default function Surrender() {
 
             {selectedRnd && (
               <ComponentCard title={`Notas de Débito — RND #${selectedRnd.num_rnd}`}>
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                  <Button
-                    size="md"
-                    variant="primary"
-                    disabled={selectedRnd?.nom_sta === "Entregada"}
-                    className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
-                    startIcon={
-                      <PlusIcon
-                        style={{ width: '16px', height: '16px', display: 'block' }}
-                        className="text-white fill-current"
+
+                {/* CABECERA: Controla la fila de acciones y estadísticas */}
+                <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+                  {/* Bloque Izquierdo: Botón y Buscador alineados perfectamente al mismo nivel */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                    <Button
+                      size="md"
+                      variant="primary"
+                      disabled={selectedRnd?.nom_sta === "Entregada"}
+                      className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 whitespace-nowrap"
+                      startIcon={
+                        <PlusIcon
+                          style={{ width: '16px', height: '16px', display: 'block' }}
+                          className="text-white fill-current"
+                        />
+                      }
+                      onClick={() => handleCreateClick('ndb')}
+                    >
+                      <span>Nueva Nota de Débito</span>
+                    </Button>
+
+                    {/* Buscador ajustado sin márgenes externos que rompan la línea vertical */}
+                    <div className="relative w-full sm:w-72">
+                      <Input
+                        placeholder="Buscar nota de débito..."
+                        className="pl-10 w-full"
+                        value={searchNdb}
+                        onChange={(e) => {
+                          setSearchNdb(e.target.value);
+                          setCurrentPageNdb(1);
+                        }}
                       />
-                    } onClick={() => handleCreateClick('ndb')}
-                  >
-                    <span>Nueva Nota de Débito</span>
-                  </Button>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-500">Total Notas de Débito:</span>
-                    <span className="font-semibold text-gray-800 dark:text-white">
-                      Bs. {totalSpent.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-gray-400">|</span>
-                    <span className="text-gray-500">Total Orden de Pago:</span>
-                    <span className="font-semibold text-gray-800 dark:text-white">
-                      Bs. {Number(selectedOpg.mon_opg).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-gray-400">|</span>
-                    <span className="text-gray-500">Queda por rendir:</span>
-                    <span className={`font-bold ${netSpent >= Number(selectedOpg.mon_opg) ? "text-green-600" : "text-amber-600"}`}>
-                      Bs. {Math.max(0, Number(selectedOpg.mon_opg) - netSpent).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                    </span>
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
+                    </div>
+                  </div>
+
+                  {/* Bloque Derecho: Estadísticas Financieras */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+                    <div className="flex items-center gap-1.5">
+                      <span>Total Notas de Débito:</span>
+                      <span className="font-semibold text-gray-800 dark:text-white">
+                        Bs. {totalSpent.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+
+                    <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
+
+                    <div className="flex items-center gap-1.5">
+                      <span>Total Orden de Pago:</span>
+                      <span className="font-semibold text-gray-800 dark:text-white">
+                        Bs. {Number(selectedOpg.mon_opg).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+
+                    <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
+
+                    <div className="flex items-center gap-1.5">
+                      <span>Queda por rendir:</span>
+                      <span className={`font-bold ${netSpent >= Number(selectedOpg.mon_opg) ? "text-green-600" : "text-amber-600"}`}>
+                        Bs. {Math.max(0, Number(selectedOpg.mon_opg) - netSpent).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <DataTable columns={ndbColumns} data={debitNotes} emptyMessage="No hay notas de débito registradas para esta rendición." />
+
+                {/* TABLA DE DATOS */}
+                <DataTable
+                  columns={ndbColumns}
+                  data={paginatedNdb}
+                  emptyMessage="No hay notas de débito registradas para esta rendición."
+                />
+
+                {/* PAGINACIÓN */}
+                {totalPagesNdb > 1 && (
+                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-150 dark:border-gray-800 pt-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Mostrando <span className="font-semibold text-gray-800 dark:text-white">{(activePageNdb - 1) * ITEMS_PER_PAGE + 1}</span> a{" "}
+                      <span className="font-semibold text-gray-800 dark:text-white">
+                        {Math.min(filteredNdb.length, activePageNdb * ITEMS_PER_PAGE)}
+                      </span>{" "}
+                      de <span className="font-semibold text-gray-800 dark:text-white">{filteredNdb.length}</span> notas
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={activePageNdb === 1}
+                        onClick={() => setCurrentPageNdb((prev) => Math.max(1, prev - 1))}
+                        startIcon={<AngleLeftIcon className="size-4" />}
+                      >
+                        Anterior
+                      </Button>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Página {activePageNdb} de {totalPagesNdb}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={activePageNdb === totalPagesNdb}
+                        onClick={() => setCurrentPageNdb((prev) => Math.min(totalPagesNdb, prev + 1))}
+                        endIcon={<AngleRightIcon className="size-4" />}
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </ComponentCard>
             )}
 
@@ -900,11 +1004,10 @@ export default function Surrender() {
                     </span>
                     <span className="text-gray-400">|</span>
                     <span className="text-gray-500">Queda por agregar:</span>
-                    <span className={`font-bold ${
-                      details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0) >= Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb)
+                    <span className={`font-bold ${details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0) >= Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb)
                         ? "text-green-600"
                         : "text-amber-600"
-                    }`}>
+                      }`}>
                       Bs. {Math.max(0, Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb) - details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
                     </span>
                   </div>

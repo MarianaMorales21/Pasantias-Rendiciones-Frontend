@@ -54,7 +54,7 @@ export function SolicitudCartaPreview({ data, authorities }: { data: FullDetaile
       {/* Título */}
       <div className="text-center font-bold mb-8 uppercase">
         <p>SOLICITUD DE CONSTANCIA</p>
-        <p>DE NOTIFICACION DE RENDICION DE CUENTA</p>
+        <p>DE NOTIFICACIÓN DE RENDICIÓN DE CUENTA</p>
       </div>
 
       {/* Cuerpo del reporte */}
