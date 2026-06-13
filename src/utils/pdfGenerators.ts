@@ -352,7 +352,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
 
   applyHeaderFooterToAllPages();
 
-  doc.save(`Detalle_Rnd_${header.num_rnd}.pdf`);
+  doc.save(`Detalle_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
 }
 /**
  * GENERADOR: ACTA DE ENTREGA
@@ -596,7 +596,7 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
   const imgFreddy = "/images/logos-reports/logoFreddy.png";
   doc.addImage(imgFreddy, "PNG", 165, footerY - 8, 35, 18);
 
-  doc.save(`Acta_Entrega_Rnd_${header.num_rnd}.pdf`);
+  doc.save(`Acta_Entrega_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
 }
 /**
  * GENERADOR: SOLICITUD (FORMA) - CORREGIDO
@@ -837,7 +837,7 @@ export async function exportSolicitudFormaPDF(data: FullDetailedReport, authorit
     maxWidth: anchoDisponible
   });
 
-  doc.save(`Solicitud_Rnd_${header.num_rnd}.pdf`);
+  doc.save(`Solicitud_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
 }
 
 /**
@@ -981,5 +981,5 @@ export async function exportSolicitudCartaPDF(data: FullDetailedReport, authorit
   const imgFreddy = "/images/logos-reports/logoFreddy.png";
   doc.addImage(imgFreddy, "PNG", 165, footerY - 8, 35, 18);
 
-  doc.save(`Solicitud_Carta_Rnd_${header.num_rnd}.pdf`);
+  doc.save(`Solicitud_Carta_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
 }

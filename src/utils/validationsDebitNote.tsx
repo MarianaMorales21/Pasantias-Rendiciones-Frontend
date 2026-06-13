@@ -3,6 +3,17 @@ import { SurrenderDetailsItem } from "../types/surrenderDetails"
 import { OrderItem } from "../types/orders";
 import { SurrenderItem } from "../types/surrender";
 
+// Nota de Banco Patria: se contabiliza cuando la suma neta de sus detalles
+// es exactamente igual al mon_ndb (positivos y negativos se compensan).
+export const isPatriaNote = (note: { ban_ndb?: string }) =>
+    note.ban_ndb === "BANCO PATRIA";
+
+const isPatriaAccountable = (note: { ban_ndb?: string; total_details?: number; mon_ndb?: number }) => {
+    if (!isPatriaNote(note)) return false;
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    return round2(Number(note.total_details ?? 0)) === round2(Number(note.mon_ndb || 0));
+};
+
 export const validateDetailAmount = (
     newAmount: number,
     selectedNdb: DebitNoteItem | null,
@@ -10,6 +21,12 @@ export const validateDetailAmount = (
     editingId?: number | string
 ) => {
     if (!selectedNdb) return { valid: false, remaining: 0, excess: false };
+
+    // Para notas Banco Patria: no hay restricción por detalle individual.
+    // Se valida solo al final (suma neta = mon_ndb).
+    if (isPatriaNote(selectedNdb)) {
+        return { valid: true, remaining: 0, excess: false };
+    }
 
     const totalSpent = allDetails
         .filter((d) => d.cod_drn !== editingId)
@@ -46,9 +63,16 @@ export const validateDebitNoteAmount = (
     // Rendiciones anteriores
     const previousRndIds = new Set(sortedRnds.slice(0, sliceIndex).map(r => r.cod_rnd));
 
-    // Monto rendido en rendiciones anteriores (siempre mon_ndb, solo notas con detalles completos)
+    // Monto rendido en rendiciones anteriores:
+    // - Notas normales: total_details >= mon_ndb
+    // - Notas Banco Patria: suma neta de detalles == mon_ndb
+    const isAccountable = (note: DebitNoteItem) =>
+        isPatriaNote(note)
+            ? isPatriaAccountable(note)
+            : (note.total_details ?? 0) >= Number(note.mon_ndb || 0);
+
     const previousSpent = allDebitNotes
-        .filter((note) => previousRndIds.has(note.rnd_ndb) && (note.total_details ?? 0) >= Number(note.mon_ndb || 0))
+        .filter((note) => previousRndIds.has(note.rnd_ndb) && isAccountable(note))
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
 
     // Reintegros en rendiciones anteriores
@@ -62,9 +86,9 @@ export const validateDebitNoteAmount = (
     // Monto máximo disponible para la rendición actual
     const maxAvailable = orderAmount - previousSpent + previousReintegros + currentReintegro;
 
-    // Monto gastado en la rendición actual (excluyendo la nota que se edita, solo notas con detalles completos)
+    // Monto gastado en la rendición actual (excluyendo la nota que se edita)
     const currentSpent = allDebitNotes
-        .filter((note) => note.rnd_ndb === selectedRnd.cod_rnd && note.cod_ndb !== editingId && (note.total_details ?? 0) >= Number(note.mon_ndb || 0))
+        .filter((note) => note.rnd_ndb === selectedRnd.cod_rnd && note.cod_ndb !== editingId && isAccountable(note))
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
 
     const remaining = maxAvailable - currentSpent;

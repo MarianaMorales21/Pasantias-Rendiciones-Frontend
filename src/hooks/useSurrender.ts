@@ -21,7 +21,8 @@ import { isApiError, ApiError } from "../helpers/helpHttp";
 
 import {
     validateDebitNoteAmount,
-    validateDetailAmount
+    validateDetailAmount,
+    isPatriaNote
 } from "../utils/validationsDebitNote";
 
 // ─────────────────────────────────────────────────────────────
@@ -146,9 +147,20 @@ export function useSurrender() {
     // CÁLCULOS FINANCIEROS
     // ─────────────────────────────────────────────────────────
 
-    // Total rendido = suma de mon_ndb de notas con detalles completos (total_details >= mon_ndb)
+    // Total rendido = suma de mon_ndb de notas contabilizadas:
+    // - Normales: total_details >= mon_ndb
+    // - Banco Patria: suma neta de detalles == mon_ndb (neto exacto)
+    const round2 = (n: number) => Math.round(n * 100) / 100;
     const totalRendered = opgDebitNotes.reduce(
-        (acc, note) => acc + ((note.total_details ?? 0) >= Number(note.mon_ndb || 0) ? Number(note.mon_ndb || 0) : 0),
+        (acc, note) => {
+            const isPatria = isPatriaNote(note);
+            const monNdb = Number(note.mon_ndb || 0);
+            const totalDet = Number(note.total_details ?? 0);
+            const accountable = isPatria
+                ? round2(totalDet) === round2(monNdb)
+                : totalDet >= monNdb;
+            return acc + (accountable ? monNdb : 0);
+        },
         0
     );
 
@@ -553,6 +565,18 @@ export function useSurrender() {
     const handleNdbUpdate = async () => {
         if (!selectedNdb) return;
 
+        // Validar cambio de banco desde Patria con montos negativos
+        const changingFromPatria = selectedNdb.ban_ndb === "BANCO PATRIA" && ndbFormData.ban_ndb !== "BANCO PATRIA";
+        if (changingFromPatria) {
+            const hasNegatives = details.some(d => Number(d.mon_drn) < 0);
+            if (hasNegatives) {
+                setIsNdbEditOpen(false);
+                setWarningMessage("No se puede cambiar el banco de BANCO PATRIA a otro banco porque la nota tiene detalles de gasto con montos negativos. Elimine o edite esos detalles antes de cambiar de banco.");
+                setIsWarningOpen(true);
+                return;
+            }
+        }
+
         // Calcular mon_ndb si hay retenciones (subtotal - retenciones)
         const monCalculado = ndbFormData.has_retention
             ? Math.round(((ndbFormData.sub_ndb || 0) - (ndbFormData.rtc_ndb || 0) - (ndbFormData.tbf_ndb || 0) - (ndbFormData.isl_ndb || 0)) * 100) / 100
@@ -671,22 +695,25 @@ export function useSurrender() {
 
     const handleDrnCreate = async () => {
 
-        if (!drnFormData.mon_drn) {
+        if (drnFormData.mon_drn === 0 || drnFormData.mon_drn === undefined || drnFormData.mon_drn === null) {
             setFieldErrors({ drn_mon_drn: "Este campo es requerido" });
             return;
         }
 
-        const { valid, remaining } = validateDetailAmount(
-            drnFormData.mon_drn,
-            selectedNdb,
-            details
-        );
+        // Banco Patria: no se valida el exceso por detalle individual
+        if (!isPatriaNote(selectedNdb)) {
+            const { valid, remaining } = validateDetailAmount(
+                drnFormData.mon_drn,
+                selectedNdb,
+                details
+            );
 
-        if (!valid) {
-            setIsDrnCreateOpen(false);
-            setWarningMessage(`No puedes exceder el monto total de la nota de débito. Disponible: Bs. ${remaining}`);
-            setIsWarningOpen(true);
-            return;
+            if (!valid) {
+                setIsDrnCreateOpen(false);
+                setWarningMessage(`No puedes exceder el monto total de la nota de débito. Disponible: Bs. ${remaining}`);
+                setIsWarningOpen(true);
+                return;
+            }
         }
 
         setIsLoading(true);
@@ -708,23 +735,26 @@ export function useSurrender() {
     const handleDrnUpdate = async () => {
         if (!selectedDrn) return;
 
-        if (!drnFormData.mon_drn) {
+        if (drnFormData.mon_drn === 0 || drnFormData.mon_drn === undefined || drnFormData.mon_drn === null) {
             setFieldErrors({ drn_mon_drn: "Este campo es requerido" });
             return;
         }
 
-        const { valid, remaining } = validateDetailAmount(
-            drnFormData.mon_drn,
-            selectedNdb,
-            details,
-            drnFormData.cod_drn
-        );
+        // Banco Patria: no se valida el exceso por detalle individual
+        if (!isPatriaNote(selectedNdb)) {
+            const { valid, remaining } = validateDetailAmount(
+                drnFormData.mon_drn,
+                selectedNdb,
+                details,
+                drnFormData.cod_drn
+            );
 
-        if (!valid) {
-            setIsDrnEditOpen(false);
-            setWarningMessage(`No puedes exceder el monto total de la nota de débito. Disponible: Bs. ${remaining}`);
-            setIsWarningOpen(true);
-            return;
+            if (!valid) {
+                setIsDrnEditOpen(false);
+                setWarningMessage(`No puedes exceder el monto total de la nota de débito. Disponible: Bs. ${remaining}`);
+                setIsWarningOpen(true);
+                return;
+            }
         }
 
         setIsLoading(true);

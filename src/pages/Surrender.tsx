@@ -66,8 +66,8 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="rnd-num">Nro. Rendición</Label>
-          <Input id="rnd-num" placeholder="Ej: 001" value={rndFormData.num_rnd}
-            onChange={(e) => onChange("num_rnd", e.target.value.replace(/\D/g, ""))}
+          <select id="rnd-num" value={rndFormData.num_rnd}
+            onChange={(e) => onChange("num_rnd", e.target.value)}
             disabled={isOriginalDelivered}
             className={`${fieldErrors?.rnd_num_rnd ? "border-red-500" : ""} ${isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""}`} />
           {fieldErrors?.rnd_num_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
@@ -440,14 +440,33 @@ function DrnForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   const onChange = (field: keyof typeof drnFormData, value: string | number | null) =>
     setDrnFormData({ ...drnFormData, [field]: value });
 
-  const { remaining, excess } = validateDetailAmount(
-    drnFormData.mon_drn,
-    selectedNdb,
-    details,
-    drnFormData.cod_drn
-  );
+  const isPatria = selectedNdb?.ban_ndb === "BANCO PATRIA";
+
+  // Para Patria: la validación de exceso no aplica por detalle
+  const { remaining, excess } = isPatria
+    ? { remaining: 0, excess: false }
+    : validateDetailAmount(drnFormData.mon_drn, selectedNdb, details, drnFormData.cod_drn);
+
+  // Para Patria: suma neta actual de los otros detalles
+  const netSum = isPatria
+    ? details
+        .filter((d) => d.cod_drn !== drnFormData.cod_drn)
+        .reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)
+    : 0;
+  const monNdb = Number(selectedNdb?.mon_ndb || 0);
+  const netAfter = isPatria ? netSum + (drnFormData.mon_drn || 0) : 0;
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto">
+      {isPatria && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+          <svg className="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Banco Patria: los montos pueden ser positivos o negativos. La suma neta debe igualar el total de la nota (Bs. {monNdb.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).</span>
+        </div>
+      )}
       <div>
         <Label htmlFor="drn-par">Partida Presupuestaria</Label>
         <SearchableSelect
@@ -459,12 +478,20 @@ function DrnForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         />
       </div>
       <div>
-        <Label htmlFor="drn-mon">Monto del Detalle (Bs.)</Label>
-        <Input id="drn-mon" type="number" step={0.01} value={drnFormData.mon_drn || ""}
+        <Label htmlFor="drn-mon">Monto del Detalle (Bs.){isPatria ? " — puede ser negativo" : ""}</Label>
+        <Input id="drn-mon" type="number" step={0.01} value={drnFormData.mon_drn === 0 ? "" : drnFormData.mon_drn}
           onChange={(e) => setDrnFormData({ ...drnFormData, mon_drn: parseFloat(e.target.value) || 0 })}
           className={`${excess ? "border-red-500" : ""} ${fieldErrors?.drn_mon_drn ? "border-red-500" : ""}`}
         />
-        {excess && (
+        {isPatria && drnFormData.mon_drn !== 0 && (
+          <p className={`text-xs mt-1 font-medium ${
+            round2(netAfter) === round2(monNdb) ? "text-green-600" : "text-amber-600"
+          }`}>
+            Suma neta tras este detalle: Bs. {netAfter.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+            {round2(netAfter) === round2(monNdb) ? " ✔ Cuadra con la nota" : ` (falta Bs. ${(monNdb - netAfter).toLocaleString("es-VE", { minimumFractionDigits: 2 })})`}
+          </p>
+        )}
+        {!isPatria && excess && (
           <p className="text-xs text-red-500 mt-1 font-medium">
             !Atencion! Solo quedan Bs. {remaining.toLocaleString("es-VE")} Disponibles.
           </p>
@@ -949,11 +976,11 @@ export default function Surrender() {
                 {totalPagesNdb > 1 && (
                   <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-150 dark:border-gray-800 pt-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Mostrando <span className="font-semibold text-gray-800 dark:text-white">{(activePageNdb - 1) * ITEMS_PER_PAGE + 1}</span> a{" "}
-                      <span className="font-semibold text-gray-800 dark:text-white">
+                      Mostrando <span className="text-gray-500 dark:text-white">{(activePageNdb - 1) * ITEMS_PER_PAGE + 1}</span> a{" "}
+                      <span className="text-gray-500 dark:text-white">
                         {Math.min(filteredNdb.length, activePageNdb * ITEMS_PER_PAGE)}
                       </span>{" "}
-                      de <span className="font-semibold text-gray-800 dark:text-white">{filteredNdb.length}</span> notas
+                      de <span className="text-gray-500 dark:text-white">{filteredNdb.length}</span> notas
                     </div>
                     <div className="flex items-center gap-3">
                       <Button
@@ -983,38 +1010,74 @@ export default function Surrender() {
               </ComponentCard>
             )}
 
-            {selectedNdb && (
-              <ComponentCard ref={detailsRef} title={`Detalles de Gasto — Nota #${selectedNdb.num_ndb}`}>
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                  <Button size="md"
-                    variant="primary"
-                    disabled={selectedRnd?.nom_sta === "Entregada"}
-                    className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
-                    startIcon={<PlusIcon style={{ width: '16px', height: '16px', display: 'block' }}
-                      className="text-white fill-current" />} onClick={() => handleCreateClick('drn')}>Agregar Detalle</Button>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-500">Total gastado:</span>
-                    <span className="font-semibold text-gray-800 dark:text-white">
-                      Bs. {details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-gray-400">|</span>
-                    <span className="text-gray-500">Monto Nota de Débito (Subtotal):</span>
-                    <span className="font-semibold text-gray-800 dark:text-white">
-                      Bs. {Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-gray-400">|</span>
-                    <span className="text-gray-500">Queda por agregar:</span>
-                    <span className={`font-bold ${details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0) >= Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb)
-                        ? "text-green-600"
-                        : "text-amber-600"
-                      }`}>
-                      Bs. {Math.max(0, Number(selectedNdb.sub_ndb || selectedNdb.mon_ndb) - details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
-                    </span>
+            {selectedNdb && (() => {
+              const isPatriaNdb = selectedNdb.ban_ndb === "BANCO PATRIA";
+              const netSum = details.reduce((acc, d) => acc + Number(d.mon_drn || 0), 0);
+              const subTotal = Number(selectedNdb.sub_ndb || 0);
+              const monNdbTotal = subTotal > 0 ? subTotal : Number(selectedNdb.mon_ndb || 0);
+              const round2 = (n: number) => Math.round(n * 100) / 100;
+              const netBalanced = round2(netSum) === round2(Number(selectedNdb.mon_ndb));
+              return (
+                <ComponentCard ref={detailsRef} title={`Detalles de Gasto — Nota #${selectedNdb.num_ndb}`}>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <Button size="md"
+                      variant="primary"
+                      disabled={selectedRnd?.nom_sta === "Entregada"}
+                      className="bg-blue-800 hover:bg-blue-900 text-white font-semibold rounded-xl px-6 py-2.5 shadow-lg shadow-black/20 transition-all duration-300 ease-in-out hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/40"
+                      startIcon={<PlusIcon style={{ width: '16px', height: '16px', display: 'block' }}
+                        className="text-white fill-current" />}
+                      onClick={() => handleCreateClick('drn')}
+                    >
+                      Agregar Detalle
+                    </Button>
+                    {isPatriaNdb ? (
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <span className="text-gray-500">Suma neta detalles:</span>
+                        <span className="font-semibold text-gray-800 dark:text-white">
+                          Bs. {netSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-gray-500">Total nota:</span>
+                        <span className="font-semibold text-gray-800 dark:text-white">
+                          Bs. {Number(selectedNdb.mon_ndb).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-gray-500">Diferencia:</span>
+                        <span className={`font-bold ${
+                          netBalanced ? "text-green-600" : "text-amber-600"
+                        }`}>
+                          {netBalanced
+                            ? "✔ Cuadra"
+                            : `Bs. ${(Number(selectedNdb.mon_ndb) - netSum).toLocaleString("es-VE", { minimumFractionDigits: 2 })}`
+                          }
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="text-gray-500">Total gastado:</span>
+                        <span className="font-semibold text-gray-800 dark:text-white">
+                          Bs. {netSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-gray-500">Monto Nota de Débito (Subtotal):</span>
+                        <span className="font-semibold text-gray-800 dark:text-white">
+                          Bs. {monNdbTotal.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-gray-500">Queda por agregar:</span>
+                        <span className={`font-bold ${
+                          netSum >= monNdbTotal ? "text-green-600" : "text-amber-600"
+                        }`}>
+                          Bs. {Math.max(0, monNdbTotal - netSum).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <DataTable columns={drnColumns} data={details} emptyMessage="No hay detalles de gasto registrados para esta nota de débito." />
-              </ComponentCard>
-            )}
+                  <DataTable columns={drnColumns} data={details} emptyMessage="No hay detalles de gasto registrados para esta nota de débito." />
+                </ComponentCard>
+              );
+            })()}
+
           </div>
         </div>
       )}

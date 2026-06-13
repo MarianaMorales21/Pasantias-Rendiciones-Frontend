@@ -24,6 +24,8 @@ export default function DepartureStatsTable({
     });
   };
 
+  const totalSum = stats.reduce((acc, curr) => acc + Number(curr.total_gastado || 0), 0);
+
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-4 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 shadow-sm">
       {/* Header con Toggle */}
@@ -103,24 +105,37 @@ export default function DepartureStatsTable({
                 </TableCell>
               </TableRow>
             ) : (
-              stats.map((item, index) => (
-                <TableRow
-                  key={item.cod_par || index}
-                  className="border-b border-gray-100 dark:border-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-800/30 transition-colors"
-                >
-                  <td className="p-4">
-                    <span className="font-semibold text-gray-800 dark:text-white/90">
-                      {item.num_par}
-                    </span>
+              <>
+                {stats.map((item, index) => (
+                  <TableRow
+                    key={item.cod_par || index}
+                    className="border-b border-gray-100 dark:border-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-800/30 transition-colors"
+                  >
+                    <td className="p-4">
+                      <span className="font-semibold text-gray-800 dark:text-white/90">
+                        {item.num_par}
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-600 dark:text-gray-300">
+                      {item.nom_par}
+                    </td>
+                    <td className="p-4 font-bold text-gray-800 dark:text-gray-200">
+                      {formatCurrency(item.total_gastado)}
+                    </td>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-gray-50/30 dark:bg-gray-800/10 border-t-2 border-gray-200 dark:border-gray-700">
+                  <td className="p-4 font-bold text-gray-800 dark:text-white">
+                    TOTAL
                   </td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300">
-                    {item.nom_par}
+                  <td className="p-4 font-semibold text-gray-500 dark:text-gray-400 text-sm">
+                    Suma total de todas las partidas
                   </td>
-                  <td className="p-4 font-bold text-gray-800 dark:text-gray-200">
-                    {formatCurrency(item.total_gastado)}
+                  <td className="p-4 font-extrabold text-blue-600 dark:text-blue-400 text-lg">
+                    {formatCurrency(totalSum)}
                   </td>
                 </TableRow>
-              ))
+              </>
             )}
           </TableBody>
         </Table>
