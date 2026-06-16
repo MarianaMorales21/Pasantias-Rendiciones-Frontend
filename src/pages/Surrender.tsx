@@ -177,7 +177,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   const futureDate = ndbFormData.fec_ndb && ndbFormData.fec_ndb > today;
 
   const bankOptions = [
-    "BANCO DE VENEZUELA", "BANESCO", "BANCO MERCANTIL", "BANCO PROVINCIAL",
+    "BANCO DE VENEZUELA", "BANESCO", "BANCO MERCANTIL", "BANCO PROVINCIAL", "BANCO PATRIA",
     "BANCO NACIONAL DE CRÉDITO (BNC)", "BANCARIBE", "BANCO EXTERIOR", "BANPLUS",
     "BANCO DEL TESORO", "BANCO DIGITAL DE LOS TRABAJADORES", "BANCO CARONÍ",
     "BANCO VENEZOLANO DE CRÉDITO", "100% BANCO", "DEL SUR", "BANCO PLAZA", "BANCO ACTIVO"
