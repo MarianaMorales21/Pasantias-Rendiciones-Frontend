@@ -66,10 +66,24 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="rnd-num">Nro. Rendición</Label>
-          <select id="rnd-num" value={rndFormData.num_rnd}
+          <select
+            id="rnd-num"
+            value={rndFormData.num_rnd}
             onChange={(e) => onChange("num_rnd", e.target.value)}
             disabled={isOriginalDelivered}
-            className={`${fieldErrors?.rnd_num_rnd ? "border-red-500" : ""} ${isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""}`} />
+            className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 ${fieldErrors?.rnd_num_rnd ? "border-red-500" : "border-gray-300"
+              } ${isOriginalDelivered ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""}`}
+          >
+            <option value="">Seleccione número</option>
+            {Array.from({ length: 4 }, (_, i) => {
+              const num = String(i + 1).padStart(2, "0");
+              return (
+                <option key={num} value={num}>
+                  Rendición #{num}
+                </option>
+              );
+            })}
+          </select>
           {fieldErrors?.rnd_num_rnd && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
         <div>
@@ -450,8 +464,8 @@ function DrnForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
   // Para Patria: suma neta actual de los otros detalles
   const netSum = isPatria
     ? details
-        .filter((d) => d.cod_drn !== drnFormData.cod_drn)
-        .reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)
+      .filter((d) => d.cod_drn !== drnFormData.cod_drn)
+      .reduce((acc, d) => acc + Number(d.mon_drn || 0), 0)
     : 0;
   const monNdb = Number(selectedNdb?.mon_ndb || 0);
   const netAfter = isPatria ? netSum + (drnFormData.mon_drn || 0) : 0;
@@ -484,9 +498,8 @@ function DrnForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
           className={`${excess ? "border-red-500" : ""} ${fieldErrors?.drn_mon_drn ? "border-red-500" : ""}`}
         />
         {isPatria && drnFormData.mon_drn !== 0 && (
-          <p className={`text-xs mt-1 font-medium ${
-            round2(netAfter) === round2(monNdb) ? "text-green-600" : "text-amber-600"
-          }`}>
+          <p className={`text-xs mt-1 font-medium ${round2(netAfter) === round2(monNdb) ? "text-green-600" : "text-amber-600"
+            }`}>
             Suma neta tras este detalle: Bs. {netAfter.toLocaleString("es-VE", { minimumFractionDigits: 2 })}
             {round2(netAfter) === round2(monNdb) ? " ✔ Cuadra con la nota" : ` (falta Bs. ${(monNdb - netAfter).toLocaleString("es-VE", { minimumFractionDigits: 2 })})`}
           </p>
@@ -807,7 +820,7 @@ export default function Surrender() {
           <ComponentCard title="Seleccione una Orden de Pago (OPG)">
             <div className="flex flex-col sm:flex-row gap-4 mb-6 max-w-2xl">
               <div className="relative flex-1">
-                <Input placeholder="Buscar por número o beneficiario..." className="pl-10 w-full" value={searchOpg} onChange={(e) => setSearchOpg(e.target.value)} />
+                <Input placeholder="Buscar por número..." className="pl-10 w-full" value={searchOpg} onChange={(e) => setSearchOpg(e.target.value)} />
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               </div>
               <div className="w-full sm:w-48">
@@ -1043,9 +1056,8 @@ export default function Surrender() {
                         </span>
                         <span className="text-gray-400">|</span>
                         <span className="text-gray-500">Diferencia:</span>
-                        <span className={`font-bold ${
-                          netBalanced ? "text-green-600" : "text-amber-600"
-                        }`}>
+                        <span className={`font-bold ${netBalanced ? "text-green-600" : "text-amber-600"
+                          }`}>
                           {netBalanced
                             ? "✔ Cuadra"
                             : `Bs. ${(Number(selectedNdb.mon_ndb) - netSum).toLocaleString("es-VE", { minimumFractionDigits: 2 })}`
@@ -1065,9 +1077,8 @@ export default function Surrender() {
                         </span>
                         <span className="text-gray-400">|</span>
                         <span className="text-gray-500">Queda por agregar:</span>
-                        <span className={`font-bold ${
-                          netSum >= monNdbTotal ? "text-green-600" : "text-amber-600"
-                        }`}>
+                        <span className={`font-bold ${netSum >= monNdbTotal ? "text-green-600" : "text-amber-600"
+                          }`}>
                           Bs. {Math.max(0, monNdbTotal - netSum).toLocaleString("es-VE", { minimumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -1196,10 +1207,10 @@ export default function Surrender() {
               <TrashBinIcon className="size-7" />
             </div>
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              ¿Eliminar este Detalle de Partida?
+              ¿Eliminar este Detalle de Nota de Debito?
             </h3>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              Esta acción eliminará permanentemente el detalle de partida del sistema y no se puede deshacer.
+              Esta acción eliminará permanentemente el detalle de nota de debito del sistema y no se puede deshacer.
             </p>
           </div>
         </Modal.Body>

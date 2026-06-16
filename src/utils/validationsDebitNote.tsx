@@ -5,11 +5,11 @@ import { SurrenderItem } from "../types/surrender";
 
 // Nota de Banco Patria: se contabiliza cuando la suma neta de sus detalles
 // es exactamente igual al mon_ndb (positivos y negativos se compensan).
-export const isPatriaNote = (note: { ban_ndb?: string }) =>
-    note.ban_ndb === "BANCO PATRIA";
+export const isPatriaNote = (note: { ban_ndb?: string } | null) =>
+    note?.ban_ndb === "BANCO PATRIA";
 
-const isPatriaAccountable = (note: { ban_ndb?: string; total_details?: number; mon_ndb?: number }) => {
-    if (!isPatriaNote(note)) return false;
+const isPatriaAccountable = (note: { ban_ndb?: string; total_details?: number; mon_ndb?: number } | null) => {
+    if (!note || !isPatriaNote(note)) return false;
     const round2 = (n: number) => Math.round(n * 100) / 100;
     return round2(Number(note.total_details ?? 0)) === round2(Number(note.mon_ndb || 0));
 };
