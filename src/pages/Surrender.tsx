@@ -226,7 +226,15 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
         <div>
           <Label htmlFor="ndb-num">Nro. Nota de Débito</Label>
           <Input id="ndb-num" placeholder="Ej: 1234 (se agregará ND- automáticamente)" value={ndbFormData.num_ndb}
-            onChange={(e) => onChange("num_ndb", e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => {
+              let val = e.target.value;
+              val = val.replace(/[^0-9-]/g, "");
+              const firstHyphen = val.indexOf("-");
+              if (firstHyphen !== -1) {
+                val = val.slice(0, firstHyphen + 1) + val.slice(firstHyphen + 1).replace(/-/g, "");
+              }
+              onChange("num_ndb", val);
+            }}
             className={fieldErrors?.ndb_num_ndb ? "border-red-500" : ""} />
           {fieldErrors?.ndb_num_ndb && <p className="text-xs text-red-500 mt-1">Este campo no puede faltar.</p>}
         </div>
