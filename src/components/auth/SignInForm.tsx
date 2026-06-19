@@ -80,7 +80,7 @@ export default function SignInForm() {
                 placeholder="12345678"
                 value={cedula}
                 onChange={(e) => {
-                  setCedula(e.target.value.replace(/\D/g, ""));
+                  setCedula(e.target.value.slice(0, 8).replace(/\D/g, ""));
                   setFieldErrors((prev) => ({ ...prev, cedula: "" }));
                 }}
                 className={`w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 ${fieldErrors.cedula ? "border-red-500" : ""}`}

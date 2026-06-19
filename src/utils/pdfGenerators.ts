@@ -222,7 +222,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
     const rows: (string | number | { content: string; colSpan?: number; styles?: object })[][] = (grupo.items || []).map(item => [
       item.num_ndb,
       formatVezDate(item.fec_ndb),
-      item.partida,
+      (item.partida || "").replace(/ \/ /g, "\n"),
       item.ref_ndb || "-",
       (item.nom_ben || "").toUpperCase(),
       item.rif_ben || "-",
@@ -270,8 +270,8 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
       columnStyles: {
         0: { cellWidth: 15, halign: "center" },
         1: { cellWidth: 15, halign: "center" },
-        2: { cellWidth: 20, halign: "center" },
-        3: { cellWidth: 20, halign: "center" },
+        2: { cellWidth: 28, halign: "center" },
+        3: { cellWidth: 12, halign: "center" },
         4: { cellWidth: 30 },
         5: { cellWidth: 15, halign: "center" },
         6: { cellWidth: 30 },
@@ -352,7 +352,7 @@ export async function exportDetailedPDF(data: FullDetailedReport, authorities: A
 
   applyHeaderFooterToAllPages();
 
-  doc.save(`Detalle_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
+  doc.save(`Detalle_Opg:${header.num_opg}_Rnd:${header.num_rnd}.pdf`);
 }
 /**
  * GENERADOR: ACTA DE ENTREGA
@@ -596,7 +596,7 @@ export async function exportActaPDF(data: FullDetailedReport, authorities: Autho
   const imgFreddy = "/images/logos-reports/logoFreddy.png";
   doc.addImage(imgFreddy, "PNG", 165, footerY - 8, 35, 18);
 
-  doc.save(`Acta_Entrega_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
+  doc.save(`Acta_Entrega_Opg:${header.cod_opg}_Rnd:${header.num_rnd}.pdf`);
 }
 /**
  * GENERADOR: SOLICITUD (FORMA) - CORREGIDO
@@ -837,7 +837,7 @@ export async function exportSolicitudFormaPDF(data: FullDetailedReport, authorit
     maxWidth: anchoDisponible
   });
 
-  doc.save(`Solicitud_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
+  doc.save(`Solicitud_Opg::${header.num_opg}_Rnd:${header.num_rnd}.pdf`);
 }
 
 /**
@@ -981,5 +981,5 @@ export async function exportSolicitudCartaPDF(data: FullDetailedReport, authorit
   const imgFreddy = "/images/logos-reports/logoFreddy.png";
   doc.addImage(imgFreddy, "PNG", 165, footerY - 8, 35, 18);
 
-  doc.save(`Solicitud_Carta_Rnd_${header.cod_opg}_${header.num_rnd}.pdf`);
+  doc.save(`Solicitud_Carta_Opg:${header.num_opg}_Rnd:${header.num_rnd}.pdf`);
 }
