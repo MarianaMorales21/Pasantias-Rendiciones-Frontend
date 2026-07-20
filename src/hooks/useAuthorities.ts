@@ -8,6 +8,10 @@ export const useAuthorities = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Warning modal states to replace alerts
+    const [warningMessage, setWarningMessage] = useState("");
+    const [isWarningOpen, setIsWarningOpen] = useState(false);
+
     const fetchAuthorities = async () => {
         setIsLoading(true);
         try {
@@ -31,14 +35,16 @@ export const useAuthorities = () => {
         try {
             const response = await authoritiesService.update(id, data);
             if (isApiError(response)) {
-                alert("Error al actualizar: " + (response.statusText || "Error desconocido"));
+                setWarningMessage("Error al actualizar: " + (response.statusText || "Error desconocido"));
+                setIsWarningOpen(true);
                 return false;
             }
             await fetchAuthorities();
             return true;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error de red";
-            alert("Error al actualizar: " + message);
+            setWarningMessage("Error al actualizar: " + message);
+            setIsWarningOpen(true);
             return false;
         } finally {
             setIsLoading(false);
@@ -54,6 +60,9 @@ export const useAuthorities = () => {
         isLoading,
         error,
         fetchAuthorities,
-        handleUpdate
+        handleUpdate,
+        warningMessage,
+        isWarningOpen,
+        setIsWarningOpen
     };
 };

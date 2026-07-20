@@ -31,6 +31,8 @@ export default function ProfileCard() {
   const [showPass, setShowPass] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [profileWarningOpen, setProfileWarningOpen] = useState(false);
+  const [profileWarningMessage, setProfileWarningMessage] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -60,7 +62,9 @@ export default function ProfileCard() {
       closeModal();
       await verifySession();
     } catch (err) {
-      alert(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      setProfileWarningMessage(message);
+      setProfileWarningOpen(true);
     } finally {
       setLoading(false);
     }
@@ -270,6 +274,33 @@ export default function ProfileCard() {
             disabled={loading}
           >
             {loading ? "Procesando..." : "Actualizar Clave"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      {/* --- MODAL WARNING PERFIL --- */}
+      <Modal isOpen={profileWarningOpen} onClose={() => setProfileWarningOpen(false)}>
+        <Modal.Header>Aviso</Modal.Header>
+        <Modal.Body>
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20">
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              Error al actualizar perfil
+            </h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {profileWarningMessage}
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors w-full"
+            onClick={() => setProfileWarningOpen(false)}
+          >
+            Entendido
           </Button>
         </Modal.Footer>
       </Modal>

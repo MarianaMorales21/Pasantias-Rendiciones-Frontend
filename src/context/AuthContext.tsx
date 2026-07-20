@@ -128,6 +128,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Polling periódico: verificar sesión cada 3 horas para detectar inactivación/eliminación por otro admin
+  useEffect(() => {
+    if (!authenticated) return;
+    const intervalId = setInterval(() => {
+      verifySession();
+    }, 10800000); // 3 horas en ms
+    return () => clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated]);
+
   return (
     <AuthContext.Provider value={{ user, loading, authenticated, login, register, changePassword, forgotPasswordByCedula, logout, verifySession }}>
       {children}

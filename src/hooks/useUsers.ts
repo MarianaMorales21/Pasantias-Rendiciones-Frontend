@@ -2,6 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import { userService } from "../services/userService";
 import { UserItem } from "../types/user";
 import { isApiError } from "../helpers/helpHttp";
+import { useAuth } from "../context/AuthContext";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_MIN_LENGTH_REGEX = /^.{8,}$/;
 
 const emptyForm: UserItem = {
   ced_usu: "",
@@ -13,6 +17,8 @@ const emptyForm: UserItem = {
 };
 
 export function useUsers() {
+  const { user: currentUser, logout } = useAuth();
+
   // --- Estados ---
   const [userData, setUserData] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +32,13 @@ export function useUsers() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Warning modal states (replaces all alert() calls)
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
+  const [isDeleteBlockedOpen, setIsDeleteBlockedOpen] = useState(false);
+  const [deleteBlockedMessage, setDeleteBlockedMessage] = useState("");
+
   const [formData, setFormData] = useState<UserItem>(emptyForm);
 
   // --- Carga de Datos ---
@@ -62,6 +75,36 @@ export function useUsers() {
     );
   }, [userData, search]);
 
+  // --- Validación compartida ---
+  const validateForm = (isEdit: boolean): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.ced_usu) errors.ced_usu = "Este campo es requerido";
+    if (!formData.nom_usu) errors.nom_usu = "Este campo es requerido";
+    if (!formData.ema_usu) {
+      errors.ema_usu = "Este campo es requerido";
+    } else if (!EMAIL_REGEX.test(formData.ema_usu.trim())) {
+      errors.ema_usu = "El formato de correo electrónico no es válido. Ej: usuario@dominio.com";
+    }
+
+    if (!isEdit) {
+      // Crear: contraseña obligatoria
+      if (!formData.cla_usu) {
+        errors.cla_usu = "Este campo es requerido";
+      } else if (!PASSWORD_MIN_LENGTH_REGEX.test(formData.cla_usu)) {
+        errors.cla_usu = "La contraseña debe tener al menos 8 caracteres";
+      }
+    } else {
+      // Editar: solo validar si se especificó
+      if (formData.cla_usu && !PASSWORD_MIN_LENGTH_REGEX.test(formData.cla_usu)) {
+        errors.cla_usu = "La contraseña debe tener al menos 8 caracteres";
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // --- Acciones ---
   const openCreateModal = () => {
     clearFieldErrors();
@@ -70,25 +113,8 @@ export function useUsers() {
   };
 
   const handleCreate = async () => {
-    const errors: Record<string, string> = {};
-    if (!formData.ced_usu) errors.ced_usu = "Este campo es requerido";
-    if (!formData.nom_usu) errors.nom_usu = "Este campo es requerido";
-    if (!formData.ema_usu) errors.ema_usu = "Este campo es requerido";
-    if (!formData.cla_usu) errors.cla_usu = "Este campo es requerido";
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
-    }
-    // Validar formato email
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.ema_usu.trim())) {
-      alert("El correo electrónico no tiene un formato válido.");
-      return;
-    }
-    // Validar contraseña mínimo 8 caracteres
-    if (formData.cla_usu && formData.cla_usu.length < 8) {
-      alert("La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
+    if (!validateForm(false)) return;
+
     try {
       const response = await userService.create(formData);
       if (isApiError(response)) throw new Error(response.statusText);
@@ -96,7 +122,8 @@ export function useUsers() {
       setIsCreateModalOpen(false);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      alert("Error al crear usuario: " + message);
+      setWarningMessage("Error al crear usuario: " + message);
+      setIsWarningModalOpen(true);
     }
   };
 
@@ -112,24 +139,8 @@ export function useUsers() {
 
   const handleSaveEdit = async () => {
     if (selectedUser) {
-      const errors: Record<string, string> = {};
-      if (!formData.ced_usu) errors.ced_usu = "Este campo es requerido";
-      if (!formData.nom_usu) errors.nom_usu = "Este campo es requerido";
-      if (!formData.ema_usu) errors.ema_usu = "Este campo es requerido";
-      if (Object.keys(errors).length > 0) {
-        setFieldErrors(errors);
-        return;
-      }
-      // Validar formato email
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.ema_usu.trim())) {
-        alert("El correo electrónico no tiene un formato válido.");
-        return;
-      }
-      // Validar contraseña si se especificó
-      if (formData.cla_usu && formData.cla_usu.length < 8) {
-        alert("La nueva contraseña debe tener al menos 8 caracteres.");
-        return;
-      }
+      if (!validateForm(true)) return;
+
       try {
         const { ced_usu, ...data } = formData;
         // Logic: if password empty, don't send it
@@ -139,9 +150,18 @@ export function useUsers() {
         if (isApiError(response)) throw new Error(response.statusText);
         fetchUsers();
         setIsEditModalOpen(false);
+
+        // Si el usuario editado es el usuario logueado y se cambió a un estado no activo → cerrar sesión
+        if (currentUser && ced_usu === currentUser.ced_usu) {
+          // Estado activo suele ser sta_usu = 1
+          if (formData.sta_usu !== 1) {
+            await logout();
+          }
+        }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al editar usuario: " + message);
+        setWarningMessage("Error al editar usuario: " + message);
+        setIsWarningModalOpen(true);
       }
     }
   };
@@ -158,15 +178,31 @@ export function useUsers() {
         if (isApiError(response)) throw new Error(response.statusText);
         fetchUsers();
         setIsDeleteModalOpen(false);
+
+        // Si el usuario eliminado es el usuario logueado → cerrar sesión
+        if (currentUser && selectedUser.ced_usu === currentUser.ced_usu) {
+          await logout();
+        }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        alert("Error al eliminar usuario: " + message);
+        setIsDeleteModalOpen(false);
+        setDeleteBlockedMessage(message);
+        setIsDeleteBlockedOpen(true);
       }
     }
   };
 
-  const handleFieldChange = <K extends keyof UserItem>(key: K, value: UserItem[K]) =>
+  const handleFieldChange = <K extends keyof UserItem>(key: K, value: UserItem[K]) => {
     setFormData((p) => ({ ...p, [key]: value }));
+    // Limpiar el error del campo cuando el usuario empieza a escribir
+    if (fieldErrors[key]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+  };
 
   return {
     userData,
@@ -184,6 +220,12 @@ export function useUsers() {
     setIsEditModalOpen,
     isDeleteModalOpen,
     setIsDeleteModalOpen,
+    isWarningModalOpen,
+    setIsWarningModalOpen,
+    warningMessage,
+    isDeleteBlockedOpen,
+    setIsDeleteBlockedOpen,
+    deleteBlockedMessage,
     formData,
     openCreateModal,
     handleCreate,

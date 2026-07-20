@@ -7,6 +7,7 @@ interface DepartureStatsTableProps {
   mode: "opg" | "annual";
   setMode: (mode: "opg" | "annual") => void;
   orderNumber?: string;
+  opgAmount?: number;
 }
 
 export default function DepartureStatsTable({
@@ -24,7 +25,6 @@ export default function DepartureStatsTable({
     });
   };
 
-  const totalSum = stats.reduce((acc, curr) => acc + Number(curr.total_gastado || 0), 0);
 
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-4 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 shadow-sm">
@@ -45,21 +45,19 @@ export default function DepartureStatsTable({
         <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
           <button
             onClick={() => setMode("opg")}
-            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              mode === "opg"
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${mode === "opg"
                 ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
+              }`}
           >
             Orden de Pago
           </button>
           <button
             onClick={() => setMode("annual")}
-            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              mode === "annual"
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${mode === "annual"
                 ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
+              }`}
           >
             Año Actual
           </button>
@@ -124,17 +122,6 @@ export default function DepartureStatsTable({
                     </td>
                   </TableRow>
                 ))}
-                <TableRow className="bg-gray-50/30 dark:bg-gray-800/10 border-t-2 border-gray-200 dark:border-gray-700">
-                  <td className="p-4 font-bold text-gray-800 dark:text-white">
-                    TOTAL
-                  </td>
-                  <td className="p-4 font-semibold text-gray-500 dark:text-gray-400 text-sm">
-                    Suma total de todas las partidas
-                  </td>
-                  <td className="p-4 font-extrabold text-blue-600 dark:text-blue-400 text-lg">
-                    {formatCurrency(totalSum)}
-                  </td>
-                </TableRow>
               </>
             )}
           </TableBody>

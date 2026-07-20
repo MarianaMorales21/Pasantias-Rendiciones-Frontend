@@ -51,10 +51,10 @@ export const emptyNdbForm: DebitNoteItem = {
     ban_ndb: "",
     ref_ndb: "",
     pro_ndb: 0,
-    rtc_ndb: 0,
-    tbf_ndb: 0,
-    isl_ndb: 0,
-    sub_ndb: 0,
+    rtc_ndb: undefined,
+    tbf_ndb: undefined,
+    isl_ndb: undefined,
+    sub_ndb: undefined,
     has_retention: false,
 };
 
@@ -353,8 +353,29 @@ export function useSurrender() {
         // Validar que la primera rendición de la OPG no tenga reintegro
         const rndsDeEstaOpg = renditions.filter(r => Number(r.opg_rnd) === Number(rndFormData.opg_rnd));
         if (rndsDeEstaOpg.length === 0 && rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
-            alert("La primera rendición de una Orden de Pago no puede tener reintegro.");
+            setIsRndCreateOpen(false);
+            setWarningMessage("La primera rendición de una Orden de Pago no puede tener reintegro.");
+            setIsWarningOpen(true);
             return;
+        }
+
+        // Validar que el reintegro no sea mayor al total de la rendición anterior
+        if (rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
+            const currentNum = parseInt(rndFormData.num_rnd);
+            if (currentNum > 1) {
+                const previousNumStr = String(currentNum - 1).padStart(2, "0");
+                const previousRnd = renditions.find(r => r.num_rnd === previousNumStr);
+                if (previousRnd) {
+                    const previousNotes = opgDebitNotes.filter(n => Number(n.rnd_ndb) === Number(previousRnd.cod_rnd));
+                    const previousTotal = previousNotes.reduce((acc, note) => acc + Number(note.mon_ndb || 0), 0);
+                    if (Number(rndFormData.rnt_rnd) > previousTotal) {
+                        setIsRndCreateOpen(false);
+                        setWarningMessage(`El reintegro no puede ser mayor al total de la rendición anterior (Bs. ${previousTotal.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
+                        setIsWarningOpen(true);
+                        return;
+                    }
+                }
+            }
         }
 
         setIsLoading(true);
@@ -403,8 +424,29 @@ export function useSurrender() {
             const rndsDeEstaOpg = renditions.filter(r => Number(r.opg_rnd) === Number(rndFormData.opg_rnd));
             const minCodRnd = rndsDeEstaOpg.length > 0 ? Math.min(...rndsDeEstaOpg.map(r => r.cod_rnd)) : null;
             if (selectedRnd.cod_rnd === minCodRnd && rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
-                alert("La primera rendición de una Orden de Pago no puede tener reintegro.");
+                setIsRndEditOpen(false);
+                setWarningMessage("La primera rendición de una Orden de Pago no puede tener reintegro.");
+                setIsWarningOpen(true);
                 return;
+            }
+        }
+
+        // Validar que el reintegro no sea mayor al total de la rendición anterior
+        if (rndFormData.rnt_rnd && Number(rndFormData.rnt_rnd) > 0) {
+            const currentNum = parseInt(rndFormData.num_rnd);
+            if (currentNum > 1) {
+                const previousNumStr = String(currentNum - 1).padStart(2, "0");
+                const previousRnd = renditions.find(r => r.num_rnd === previousNumStr);
+                if (previousRnd) {
+                    const previousNotes = opgDebitNotes.filter(n => Number(n.rnd_ndb) === Number(previousRnd.cod_rnd));
+                    const previousTotal = previousNotes.reduce((acc, note) => acc + Number(note.mon_ndb || 0), 0);
+                    if (Number(rndFormData.rnt_rnd) > previousTotal) {
+                        setIsRndEditOpen(false);
+                        setWarningMessage(`El reintegro no puede ser mayor al total de la rendición anterior (Bs. ${previousTotal.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
+                        setIsWarningOpen(true);
+                        return;
+                    }
+                }
             }
         }
 
@@ -495,7 +537,9 @@ export function useSurrender() {
 
         // Validar fecha no futura
         if (ndbFormData.fec_ndb && new Date(ndbFormData.fec_ndb) > new Date()) {
-            alert("La fecha de la Nota de Débito no puede ser posterior a la fecha actual.");
+            setIsNdbCreateOpen(false);
+            setWarningMessage("La fecha de la Nota de Débito no puede ser posterior a la fecha actual.");
+            setIsWarningOpen(true);
             return;
         }
 
@@ -582,16 +626,31 @@ export function useSurrender() {
             ? Math.round(((ndbFormData.sub_ndb || 0) - (ndbFormData.rtc_ndb || 0) - (ndbFormData.tbf_ndb || 0) - (ndbFormData.isl_ndb || 0)) * 100) / 100
             : ndbFormData.mon_ndb;
 
-        // Si la nota ya tiene detalles, solo bloquear si el usuario REDUJO el monto
-        // respecto al original. Si no lo tocó (ej: editó solo el concepto), no hay nada que validar.
+        // Si la nota ya tiene detalles, validar que el nuevo monto/subtotal no sea menor a la suma de detalles.
+        // Con retenciones: los detalles se cargan contra el subtotal (sub_ndb).
+        // Sin retenciones: los detalles se cargan contra el monto total (mon_ndb).
         const monCalculadoNum = Math.round(Number(monCalculado) * 100) / 100;
         const originalMonNum = Math.round(Number(selectedNdb.mon_ndb) * 100) / 100;
-        const isAmountReduced = monCalculadoNum < originalMonNum;
+
+        const hasRetention = !!(
+            ndbFormData.has_retention ||
+            Number(ndbFormData.rtc_ndb || 0) > 0 ||
+            Number(ndbFormData.tbf_ndb || 0) > 0 ||
+            Number(ndbFormData.isl_ndb || 0) > 0
+        );
+        const compareAmount = hasRetention
+            ? Math.round(Number(ndbFormData.sub_ndb || 0) * 100) / 100
+            : monCalculadoNum;
+        const originalCompare = hasRetention
+            ? Math.round(Number(selectedNdb.sub_ndb || 0) * 100) / 100
+            : originalMonNum;
+        const isAmountReduced = compareAmount < originalCompare;
         if (isAmountReduced) {
             const detailsSum = Math.round(details.reduce((acc, curr) => acc + Number(curr.mon_drn || 0), 0) * 100) / 100;
-            if (monCalculadoNum < detailsSum) {
+            if (compareAmount < detailsSum) {
+                const label = hasRetention ? "subtotal" : "monto";
                 setIsNdbEditOpen(false);
-                setWarningMessage(`No se puede reducir el monto de la nota de débito por debajo de la suma de sus detalles (Bs. ${detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
+                setWarningMessage(`No se puede reducir el ${label} de la nota de débito por debajo de la suma de sus detalles (Bs. ${detailsSum.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).`);
                 setIsWarningOpen(true);
                 return;
             }
@@ -613,12 +672,14 @@ export function useSurrender() {
 
         // Validar fecha no futura
         if (ndbFormData.fec_ndb && new Date(ndbFormData.fec_ndb) > new Date()) {
-            alert("La fecha de la Nota de Débito no puede ser posterior a la fecha actual.");
+            setIsNdbEditOpen(false);
+            setWarningMessage("La fecha de la Nota de Débito no puede ser posterior a la fecha actual.");
+            setIsWarningOpen(true);
             return;
         }
 
-        // Para validar contra OPG, usar mon_ndb (el subtotal solo aplica para detalles)
-        const montoARendir = ndbFormData.mon_ndb || 0;
+        // Para validar contra OPG, usar monCalculado
+        const montoARendir = monCalculado;
 
         const { valid, remaining } = validateDebitNoteAmount(
             montoARendir,
@@ -885,6 +946,7 @@ export function useSurrender() {
         totalRendered,
         isNdbAmountLocked,
         isOpgAmountLocked,
+        fetchRenditionsByOpg,
 
         // ── Warning modal ──
         warningMessage,

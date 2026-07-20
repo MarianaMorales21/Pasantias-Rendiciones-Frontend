@@ -19,7 +19,7 @@ import { OrderItem } from "../types/orders";
 
 // ─── Formulario: Rendición (Cabecera) ─────────────────────────────────────────
 function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
-  const { rndFormData, setRndFormData, orders, states: hookStates, renditions, fieldErrors, selectedRnd } = hook;
+  const { rndFormData, setRndFormData, orders, states: hookStates, renditions, fieldErrors, selectedRnd, opgDebitNotes } = hook;
   const { user } = useAuth();
   const isAdminUser = user?.rol_usu === 1;
   const isCoordinatorUser = user?.rol_usu === 2;
@@ -60,6 +60,21 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
     ? codRndActual === minCodRnd
     : rndsDeEstaOpg.length === 0;
   const isFirstRendition = rndFormData.opg_rnd > 0 && esLaPrimera;
+
+  const esPrimeraRendicionConReintegro = isFirstRendition && Number(rndFormData.rnt_rnd || 0) > 0;
+
+  const maxReintegro = useMemo(() => {
+    if (!rndFormData.num_rnd) return null;
+    const currentNum = parseInt(rndFormData.num_rnd);
+    if (currentNum <= 1) return 0;
+    const previousNumStr = String(currentNum - 1).padStart(2, "0");
+    const previousRnd = renditions.find(r => r.num_rnd === previousNumStr && Number(r.opg_rnd) === Number(rndFormData.opg_rnd));
+    if (!previousRnd) return null;
+    const previousNotes = opgDebitNotes.filter((n: DebitNoteItem) => Number(n.rnd_ndb) === Number(previousRnd.cod_rnd));
+    return previousNotes.reduce((acc: number, note: DebitNoteItem) => acc + Number(note.mon_ndb || 0), 0);
+  }, [rndFormData.num_rnd, rndFormData.opg_rnd, renditions, opgDebitNotes]);
+
+  const esReintegroExcedido = maxReintegro !== null && Number(rndFormData.rnt_rnd || 0) > maxReintegro;
 
   return (
     <Modal.Body className="space-y-4 max-h-[70vh] overflow-y-auto">
@@ -136,10 +151,15 @@ function RndForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               onChange("rnt_rnd", val === "" ? null : val);
             }}
             disabled={isFirstRendition || isOriginalDelivered}
-            className={(isFirstRendition || isOriginalDelivered) ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""} />
+            className={`${(isFirstRendition || isOriginalDelivered) ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800" : ""} ${(esReintegroExcedido || esPrimeraRendicionConReintegro) ? "border-red-500" : ""}`} />
           {isFirstRendition && !isOriginalDelivered && (
-            <p className="text-xs text-yellow-500 mt-1 font-medium">
+            <p className={`text-xs mt-1 font-medium ${esPrimeraRendicionConReintegro ? "text-red-500" : "text-yellow-500"}`}>
               La primera rendición de una OPG no puede tener reintegro.
+            </p>
+          )}
+          {esReintegroExcedido && maxReintegro !== null && (
+            <p className="text-xs text-red-500 mt-1 font-medium">
+              !Atencion! El reintegro no puede ser mayor al total de la rendición anterior (Bs. {maxReintegro.toLocaleString("es-VE", { minimumFractionDigits: 2 })}).
             </p>
           )}
         </div>
@@ -217,7 +237,7 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
     selectedRnd,
     opgDebitNotes,
     hook.renditions,
-    selectedNdb?.cod_ndb
+    ndbFormData.cod_ndb || undefined
   );
 
   return (
@@ -321,9 +341,9 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               id="ndb-sub"
               type="number"
               step={0.01}
-              value={ndbFormData.sub_ndb || ""}
-              onChange={(e) => onChange("sub_ndb", parseFloat(e.target.value) || 0)}
-              className={!subtotalValido && Number(ndbFormData.sub_ndb || 0) > 0 ? "border-red-500" : ""}
+              value={ndbFormData.sub_ndb ?? ""}
+              onChange={(e) => onChange("sub_ndb", e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
+              className={`${(!subtotalValido && Number(ndbFormData.sub_ndb || 0) > 0) || excess ? "border-red-500" : ""}`}
             />
             {ndbFormData.has_retention && Number(ndbFormData.sub_ndb || 0) > monOpgActual && (
               <p className="text-xs text-red-500 mt-1 font-medium">
@@ -335,6 +355,11 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
                 El subtotal no puede ser menor a la suma de las retenciones.
               </p>
             )}
+            {excess && (
+              <p className="text-xs text-red-500 mt-1 font-medium">
+                !Atencion! Solo quedan Bs. {remaining.toLocaleString("es-VE")} Disponibles.
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -343,8 +368,8 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
                 id="ndb-rtc"
                 type="number"
                 step={0.01}
-                value={ndbFormData.rtc_ndb || ""}
-                onChange={(e) => onChange("rtc_ndb", parseFloat(e.target.value) || 0)}
+                value={ndbFormData.rtc_ndb ?? ""}
+                onChange={(e) => onChange("rtc_ndb", e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
                 className={(ndbFormData.rtc_ndb || 0) >= monOpgActual || Number(ndbFormData.rtc_ndb || 0) > Number(ndbFormData.sub_ndb || 0) ? "border-red-500" : ""}
               />
               {(ndbFormData.rtc_ndb || 0) >= monOpgActual && (
@@ -364,8 +389,8 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
                 id="ndb-tbf"
                 type="number"
                 step={0.01}
-                value={ndbFormData.tbf_ndb || ""}
-                onChange={(e) => onChange("tbf_ndb", parseFloat(e.target.value) || 0)}
+                value={ndbFormData.tbf_ndb ?? ""}
+                onChange={(e) => onChange("tbf_ndb", e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
                 className={(ndbFormData.tbf_ndb || 0) >= monOpgActual || Number(ndbFormData.tbf_ndb || 0) > Number(ndbFormData.sub_ndb || 0) ? "border-red-500" : ""}
               />
               {(ndbFormData.tbf_ndb || 0) >= monOpgActual && (
@@ -385,8 +410,8 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
                 id="ndb-isl"
                 type="number"
                 step={0.01}
-                value={ndbFormData.isl_ndb || ""}
-                onChange={(e) => onChange("isl_ndb", parseFloat(e.target.value) || 0)}
+                value={ndbFormData.isl_ndb ?? ""}
+                onChange={(e) => onChange("isl_ndb", e.target.value === "" ? "" : (parseFloat(e.target.value) || 0))}
                 className={(ndbFormData.isl_ndb || 0) >= monOpgActual || Number(ndbFormData.isl_ndb || 0) > Number(ndbFormData.sub_ndb || 0) ? "border-red-500" : ""}
               />
               {(ndbFormData.isl_ndb || 0) >= monOpgActual && (
@@ -409,8 +434,13 @@ function NdbForm({ hook }: { hook: ReturnType<typeof useSurrender> }) {
               step={0.01}
               value={monNdbCalculado || ""}
               disabled
-              className={`cursor-not-allowed bg-gray-100 dark:bg-gray-700 ${(!subtotalValido || retencionesInvalidas || fieldErrors?.ndb_mon_ndb) ? "border-red-500" : ""}`}
+              className={`cursor-not-allowed bg-gray-100 dark:bg-gray-700 ${(!subtotalValido || retencionesInvalidas || fieldErrors?.ndb_mon_ndb || excess) ? "border-red-500" : ""}`}
             />
+            {excess && (
+              <p className="text-xs text-red-500 mt-1 font-medium">
+                !Atencion! Solo quedan Bs. {remaining.toLocaleString("es-VE")} Disponibles.
+              </p>
+            )}
             {retencionesInvalidas && (
               <p className="text-xs text-red-500 mt-1 font-medium">
                 Una o más retenciones superan el monto de la OPG.
@@ -550,7 +580,8 @@ export default function Surrender() {
     isDrnCreateOpen, setIsDrnCreateOpen, isDrnEditOpen, setIsDrnEditOpen, isDrnDeleteOpen, setIsDrnDeleteOpen,
     handleDrnCreate, handleDrnUpdate, handleDrnDelete, setDrnFormData, setSelectedDrn,
     clearFieldErrors,
-    warningMessage, isWarningOpen, setIsWarningOpen
+    warningMessage, isWarningOpen, setIsWarningOpen,
+    fetchRenditionsByOpg
   } = hook;
 
   const [isFullyRenderedModalOpen, setIsFullyRenderedModalOpen] = useState(false);
@@ -569,6 +600,33 @@ export default function Surrender() {
   const sortedNdb = useMemo(() => {
     return [...debitNotes].sort((a, b) => b.cod_ndb - a.cod_ndb);
   }, [debitNotes]);
+
+  const isRndSaveDisabled = useMemo(() => {
+    const numRnd = hook.rndFormData.num_rnd;
+    const opgRnd = hook.rndFormData.opg_rnd;
+    const rntRnd = hook.rndFormData.rnt_rnd;
+    if (!numRnd || !opgRnd) return false;
+
+    const rndsDeEstaOpg = renditions.filter(r => Number(r.opg_rnd) === Number(opgRnd));
+    const codRndActual = selectedRnd?.cod_rnd;
+    const minCodRnd = rndsDeEstaOpg.length > 0 ? Math.min(...rndsDeEstaOpg.map(r => r.cod_rnd)) : null;
+    const esLaPrimera = codRndActual !== undefined && codRndActual !== null
+      ? codRndActual === minCodRnd
+      : rndsDeEstaOpg.length === 0;
+    const isFirstRendition = Number(opgRnd) > 0 && esLaPrimera;
+    const esPrimeraRendicionConReintegro = isFirstRendition && Number(rntRnd || 0) > 0;
+
+    const currentNum = parseInt(numRnd);
+    if (currentNum <= 1) return esPrimeraRendicionConReintegro;
+    const previousNumStr = String(currentNum - 1).padStart(2, "0");
+    const previousRnd = renditions.find(r => r.num_rnd === previousNumStr && Number(r.opg_rnd) === Number(opgRnd));
+    if (!previousRnd) return false;
+    const previousNotes = opgDebitNotes.filter(n => Number(n.rnd_ndb) === Number(previousRnd.cod_rnd));
+    const previousTotal = previousNotes.reduce((acc, note) => acc + Number(note.mon_ndb || 0), 0);
+    const esReintegroExcedido = Number(rntRnd || 0) > previousTotal;
+
+    return esReintegroExcedido || esPrimeraRendicionConReintegro;
+  }, [hook.rndFormData.num_rnd, hook.rndFormData.opg_rnd, hook.rndFormData.rnt_rnd, renditions, opgDebitNotes, selectedRnd]);
 
   const filteredNdb = useMemo(() => {
     const q = searchNdb.toLowerCase().trim();
@@ -626,6 +684,9 @@ export default function Surrender() {
       setRndFormData({ ...emptyRndForm, opg_rnd: selectedOpg!.cod_opg });
       setIsRndCreateOpen(true);
     } else if (type === 'ndb') {
+      if (selectedOpg) {
+        fetchRenditionsByOpg(selectedOpg.cod_opg);
+      }
       setNdbFormData({ ...emptyNdbForm, rnd_ndb: selectedRnd!.cod_rnd });
       setIsNdbCreateOpen(true);
     } else if (type === 'drn') {
@@ -726,10 +787,17 @@ export default function Surrender() {
               onClick={() => {
                 if (!canEdit) return;
                 clearFieldErrors();
+                if (selectedOpg) {
+                  fetchRenditionsByOpg(selectedOpg.cod_opg);
+                }
                 setSelectedNdb(item);
                 setNdbFormData({
                   ...item,
-                  has_retention: Number(item.sub_ndb) > 0 || Number(item.rtc_ndb) > 0 || Number(item.tbf_ndb) > 0 || Number(item.isl_ndb) > 0
+                  has_retention: Number(item.sub_ndb) > 0 || Number(item.rtc_ndb) > 0 || Number(item.tbf_ndb) > 0 || Number(item.isl_ndb) > 0,
+                  sub_ndb: Number(item.sub_ndb || 0) > 0 ? Number(item.sub_ndb) : undefined,
+                  rtc_ndb: Number(item.rtc_ndb || 0) > 0 ? Number(item.rtc_ndb) : undefined,
+                  tbf_ndb: Number(item.tbf_ndb || 0) > 0 ? Number(item.tbf_ndb) : undefined,
+                  isl_ndb: Number(item.isl_ndb || 0) > 0 ? Number(item.isl_ndb) : undefined,
                 });
                 setIsNdbEditOpen(true);
               }}
@@ -1107,7 +1175,7 @@ export default function Surrender() {
         <RndForm hook={hook} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => { setIsRndCreateOpen(false); setSelectedRnd(null); }}>Cancelar</Button>
-          <Button onClick={handleRndCreate}>Crear</Button>
+          <Button onClick={handleRndCreate} disabled={isRndSaveDisabled}>Crear</Button>
         </Modal.Footer>
       </Modal>
 
@@ -1116,7 +1184,7 @@ export default function Surrender() {
         <RndForm hook={hook} />
         <Modal.Footer>
           <Button variant="outline" onClick={() => { setIsRndEditOpen(false); setSelectedRnd(null); }}>Cancelar</Button>
-          <Button onClick={handleRndUpdate}>Guardar</Button>
+          <Button onClick={handleRndUpdate} disabled={isRndSaveDisabled}>Guardar</Button>
         </Modal.Footer>
       </Modal>
 

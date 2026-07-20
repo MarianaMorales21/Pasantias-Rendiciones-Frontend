@@ -8,6 +8,10 @@ export const useOrders = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    
+    // Warning modal states to replace alerts
+    const [warningMessage, setWarningMessage] = useState("");
+    const [isWarningOpen, setIsWarningOpen] = useState(false);
 
     const clearFieldErrors = () => setFieldErrors({});
 
@@ -46,23 +50,28 @@ export const useOrders = () => {
     const handleCreate = async (formData: Partial<OrderItem>) => {
         if (!validateOrderFields(formData)) return null;
         if (Number(formData.mon_opg) <= 0) {
-            alert("El monto de la Orden de Pago debe ser mayor a cero.");
+            setWarningMessage("El monto de la Orden de Pago debe ser mayor a cero.");
+            setIsWarningOpen(true);
             return null;
         }
         if (formData.fec_opg && formData.fec_opg > new Date().toISOString().split('T')[0]) {
-            alert("La fecha de emisión no puede ser posterior a la fecha actual.");
+            setWarningMessage("La fecha de emisión no puede ser posterior a la fecha actual.");
+            setIsWarningOpen(true);
             return null;
         }
         if (formData.fco_opg && formData.fco_opg > new Date().toISOString().split('T')[0]) {
-            alert("La fecha de cobro no puede ser posterior a la fecha actual.");
+            setWarningMessage("La fecha de cobro no puede ser posterior a la fecha actual.");
+            setIsWarningOpen(true);
             return null;
         }
         if (formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg) {
-            alert("La fecha de cobro no puede ser anterior a la fecha de emisión.");
+            setWarningMessage("La fecha de cobro no puede ser anterior a la fecha de emisión.");
+            setIsWarningOpen(true);
             return null;
         }
         if (formData.fdc_opg && formData.fec_opg && formData.fdc_opg > formData.fec_opg) {
-            alert("La fecha del decreto no puede ser posterior a la fecha de emisión.");
+            setWarningMessage("La fecha del decreto no puede ser posterior a la fecha de emisión.");
+            setIsWarningOpen(true);
             return null;
         }
         setIsLoading(true);
@@ -70,7 +79,8 @@ export const useOrders = () => {
             const response = await orderService.create(formData);
             if (isApiError(response)) {
                 const msg = (response as ApiError).message || response.statusText || "Error desconocido";
-                alert("Error al crear orden: " + msg);
+                setWarningMessage("Error al crear orden: " + msg);
+                setIsWarningOpen(true);
                 return null;
             }
             await fetchData();
@@ -78,7 +88,8 @@ export const useOrders = () => {
             return response;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error de red";
-            alert("Error al crear orden: " + message);
+            setWarningMessage("Error al crear orden: " + message);
+            setIsWarningOpen(true);
             return null;
         } finally {
             setIsLoading(false);
@@ -88,23 +99,28 @@ export const useOrders = () => {
     const handleUpdate = async (id: number, formData: Partial<OrderItem>) => {
         if (!validateOrderFields(formData)) return false;
         if (Number(formData.mon_opg) <= 0) {
-            alert("El monto de la Orden de Pago debe ser mayor a cero.");
+            setWarningMessage("El monto de la Orden de Pago debe ser mayor a cero.");
+            setIsWarningOpen(true);
             return false;
         }
         if (formData.fec_opg && formData.fec_opg > new Date().toISOString().split('T')[0]) {
-            alert("La fecha de emisión no puede ser posterior a la fecha actual.");
+            setWarningMessage("La fecha de emisión no puede ser posterior a la fecha actual.");
+            setIsWarningOpen(true);
             return false;
         }
         if (formData.fco_opg && formData.fco_opg > new Date().toISOString().split('T')[0]) {
-            alert("La fecha de cobro no puede ser posterior a la fecha actual.");
+            setWarningMessage("La fecha de cobro no puede ser posterior a la fecha actual.");
+            setIsWarningOpen(true);
             return false;
         }
         if (formData.fco_opg && formData.fec_opg && formData.fco_opg < formData.fec_opg) {
-            alert("La fecha de cobro no puede ser anterior a la fecha de emisión.");
+            setWarningMessage("La fecha de cobro no puede ser anterior a la fecha de emisión.");
+            setIsWarningOpen(true);
             return false;
         }
         if (formData.fdc_opg && formData.fec_opg && formData.fdc_opg > formData.fec_opg) {
-            alert("La fecha del decreto no puede ser posterior a la fecha de emisión.");
+            setWarningMessage("La fecha del decreto no puede ser posterior a la fecha de emisión.");
+            setIsWarningOpen(true);
             return false;
         }
         setIsLoading(true);
@@ -112,7 +128,8 @@ export const useOrders = () => {
             const response = await orderService.update(id, formData);
             if (isApiError(response)) {
                 const msg = (response as ApiError).message || response.statusText || "Error desconocido";
-                alert("Error al actualizar orden: " + msg);
+                setWarningMessage("Error al actualizar orden: " + msg);
+                setIsWarningOpen(true);
                 return false;
             }
             await fetchData();
@@ -120,7 +137,8 @@ export const useOrders = () => {
             return true;
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error de red";
-            alert("Error al actualizar orden: " + message);
+            setWarningMessage("Error al actualizar orden: " + message);
+            setIsWarningOpen(true);
             return false;
         } finally {
             setIsLoading(false);
@@ -158,6 +176,9 @@ export const useOrders = () => {
         fetchData,
         handleCreate,
         handleUpdate,
-        handleDelete
+        handleDelete,
+        warningMessage,
+        isWarningOpen,
+        setIsWarningOpen
     };
 };

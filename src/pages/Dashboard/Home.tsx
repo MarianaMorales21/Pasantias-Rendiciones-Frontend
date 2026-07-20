@@ -87,12 +87,13 @@ export default function Home() {
         </div>
 
         <div className="col-span-12 lg:col-span-12">
-          <DepartureStatsTable
+        <DepartureStatsTable
             stats={departureStats}
             loading={departureStatsLoading}
             mode={departureStatsMode}
             setMode={setDepartureStatsMode}
             orderNumber={selectedOrder?.num_opg?.toString()}
+            opgAmount={selectedOrder?.mon_opg !== undefined ? Number(selectedOrder.mon_opg) : undefined}
           />
         </div>
 

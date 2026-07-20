@@ -35,7 +35,7 @@ export default function SignInForm() {
     setLoading(true);
 
     try {
-      await login(cedula, password);
+      await login(`V-${cedula}`, password);
       navigate("/");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -75,16 +75,23 @@ export default function SignInForm() {
               <Label className="mb-2.5 block font-medium text-gray-700 dark:text-gray-300">
                 Cedula
               </Label>
-              <Input
-                type="text"
-                placeholder="12345678"
-                value={cedula}
-                onChange={(e) => {
-                  setCedula(e.target.value.slice(0, 8).replace(/\D/g, ""));
-                  setFieldErrors((prev) => ({ ...prev, cedula: "" }));
-                }}
-                className={`w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 ${fieldErrors.cedula ? "border-red-500" : ""}`}
-              />
+              <div className="flex gap-2">
+                <span className="inline-flex items-center px-3 h-11 rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  V-
+                </span>
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="12345678"
+                    value={cedula}
+                    onChange={(e) => {
+                      setCedula(e.target.value.replace(/\D/g, "").slice(0, 8));
+                      setFieldErrors((prev) => ({ ...prev, cedula: "" }));
+                    }}
+                    className={`w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 ${fieldErrors.cedula ? "border-red-500" : ""}`}
+                  />
+                </div>
+              </div>
               {fieldErrors.cedula && (
                 <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.cedula}</p>
               )}
@@ -126,7 +133,7 @@ export default function SignInForm() {
                 to="/forgot-password"
                 className="text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                Olvido de contraseña
+
               </Link>
             </div>
 

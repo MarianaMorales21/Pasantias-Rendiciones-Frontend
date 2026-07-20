@@ -8,12 +8,6 @@ import { SurrenderItem } from "../types/surrender";
 export const isPatriaNote = (note: { ban_ndb?: string } | null) =>
     note?.ban_ndb === "BANCO PATRIA";
 
-const isPatriaAccountable = (note: { ban_ndb?: string; total_details?: number; mon_ndb?: number } | null) => {
-    if (!note || !isPatriaNote(note)) return false;
-    const round2 = (n: number) => Math.round(n * 100) / 100;
-    return round2(Number(note.total_details ?? 0)) === round2(Number(note.mon_ndb || 0));
-};
-
 export const validateDetailAmount = (
     newAmount: number,
     selectedNdb: DebitNoteItem | null,
@@ -63,16 +57,9 @@ export const validateDebitNoteAmount = (
     // Rendiciones anteriores
     const previousRndIds = new Set(sortedRnds.slice(0, sliceIndex).map(r => r.cod_rnd));
 
-    // Monto rendido en rendiciones anteriores:
-    // - Notas normales: total_details >= mon_ndb
-    // - Notas Banco Patria: suma neta de detalles == mon_ndb
-    const isAccountable = (note: DebitNoteItem) =>
-        isPatriaNote(note)
-            ? isPatriaAccountable(note)
-            : (note.total_details ?? 0) >= Number(note.mon_ndb || 0);
-
+    // Monto rendido en rendiciones anteriores (todas las notas de débito)
     const previousSpent = allDebitNotes
-        .filter((note) => previousRndIds.has(note.rnd_ndb) && isAccountable(note))
+        .filter((note) => previousRndIds.has(note.rnd_ndb))
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
 
     // Reintegros en rendiciones anteriores
@@ -86,9 +73,9 @@ export const validateDebitNoteAmount = (
     // Monto máximo disponible para la rendición actual
     const maxAvailable = orderAmount - previousSpent + previousReintegros + currentReintegro;
 
-    // Monto gastado en la rendición actual (excluyendo la nota que se edita)
+    // Monto gastado en la rendición actual (excluyendo la nota que se edita, sumando todas)
     const currentSpent = allDebitNotes
-        .filter((note) => note.rnd_ndb === selectedRnd.cod_rnd && note.cod_ndb !== editingId && isAccountable(note))
+        .filter((note) => note.rnd_ndb === selectedRnd.cod_rnd && note.cod_ndb !== editingId)
         .reduce((acc, curr) => acc + Number(curr.mon_ndb || 0), 0);
 
     const remaining = maxAvailable - currentSpent;

@@ -26,7 +26,7 @@ export default function ForgotPasswordForm() {
     }
 
     try {
-      const res = await forgotPasswordByCedula(cedula.trim());
+      const res = await forgotPasswordByCedula(`V-${cedula.trim()}`);
       setSuccessMsg(res.message);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -41,7 +41,7 @@ export default function ForgotPasswordForm() {
       <div className="p-8 sm:p-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
-            Olvido de Contraseña
+
           </h1>
         </div>
 
@@ -62,13 +62,20 @@ export default function ForgotPasswordForm() {
               <Label className="mb-2.5 block font-medium text-gray-700 dark:text-gray-300">
                 Cédula
               </Label>
-              <Input
-                type="text"
-                placeholder="Ingrese su cédula"
-                value={cedula}
-                onChange={(e) => { setCedula(e.target.value); setFieldErrors((prev) => ({ ...prev, cedula: "" })); }}
-                className={`w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 ${fieldErrors.cedula ? "border-red-500" : ""}`}
-              />
+              <div className="flex gap-2">
+                <span className="inline-flex items-center px-3 h-11 rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  V-
+                </span>
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="12345678"
+                    value={cedula}
+                    onChange={(e) => { setCedula(e.target.value.replace(/\D/g, "").slice(0, 8)); setFieldErrors((prev) => ({ ...prev, cedula: "" })); }}
+                    className={`w-full bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500/20 ${fieldErrors.cedula ? "border-red-500" : ""}`}
+                  />
+                </div>
+              </div>
               {fieldErrors.cedula && (
                 <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.cedula}</p>
               )}
